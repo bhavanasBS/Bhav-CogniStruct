@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.sw?
