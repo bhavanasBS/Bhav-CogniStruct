@@ -33,18 +33,19 @@ const TeamForm = ({ isOpen, onClose, onSubmit, team = null, managers = [], isLoa
 
   const handleSubmit = () => {
     if (!validate()) return;
-    onSubmit(form);
+    onSubmit({
+      ...form,
+      managerId: form.managerId ? parseInt(form.managerId, 10) : null,
+    });
   };
 
-  const managerList = managers.length > 0 ? managers : [
-    { userId: 2, firstName: 'Sarah', lastName: 'Johnson' },
-    { userId: 8, firstName: 'Rachel', lastName: 'Taylor' },
-  ];
-
-  // Convert to CustomSelect options format
+  // Convert to CustomSelect options format — managerSearch returns {id, name, email, role}
   const managerOptions = [
     { value: '', label: 'Select a manager' },
-    ...managerList.map(m => ({ value: m.userId, label: `${m.firstName} ${m.lastName}` }))
+    ...managers.map(m => ({
+      value: m.id || m.userId,
+      label: m.name || `${m.firstName} ${m.lastName}`,
+    })),
   ];
 
   return (

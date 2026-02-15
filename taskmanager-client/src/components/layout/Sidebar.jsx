@@ -41,16 +41,9 @@ const getNavigationByRole = (userRole) => {
     // Admin only
     admin: [
       { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: 'from-purple-500 to-purple-600' },
-      { name: 'Tasks', href: '/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
-      { name: 'Teams', href: '/teams', icon: UsersRound, color: 'from-emerald-500 to-emerald-600' },
-      { name: 'Time Logs', href: '/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
-      { name: 'Analytics', href: '/analytics', icon: BarChart3, color: 'from-indigo-500 to-indigo-600' },
-      { name: 'Employee Insights', href: '/employee-insights', icon: Sparkles, color: 'from-rose-500 to-pink-600' },
-      { name: 'Workload', href: '/workload', icon: Scale, color: 'from-rose-500 to-rose-600' },
       { name: 'Users', href: '/users', icon: Users, color: 'from-violet-500 to-violet-600' },
       { name: 'Roles', href: '/roles', icon: Shield, color: 'from-pink-500 to-pink-600' },
-      { name: 'Audit Log', href: '/audit-log', icon: Activity, color: 'from-slate-500 to-slate-600' },
-      { name: 'System Health', href: '/system-health', icon: Server, color: 'from-teal-500 to-teal-600' },
+      { name: 'Teams', href: '/teams', icon: UsersRound, color: 'from-emerald-500 to-emerald-600' },
     ],
 
     // Manager
@@ -141,8 +134,7 @@ const Sidebar = () => {
 
     // Admin paths - includes all main dashboard and admin-specific pages
     const adminPaths = [
-      '/dashboard', '/tasks', '/teams', '/time-logs', '/analytics',
-      '/workload', '/users', '/roles', '/audit-log', '/system-health'
+      '/dashboard', '/users', '/roles', '/teams'
     ];
     if (adminPaths.some(p => path === p || path.startsWith(p + '/'))) {
       return 'Admin';

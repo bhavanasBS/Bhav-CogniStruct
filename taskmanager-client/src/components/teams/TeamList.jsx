@@ -34,7 +34,7 @@ const TeamList = ({ teams, onSelect, isLoading }) => {
         const managerColor = generateAvatarColor(team.managerName || team.manager?.firstName || '');
         return (
           <Card
-            key={team.teamId}
+            key={team.id || team.teamId}
             hover
             onClick={() => onSelect?.(team)}
           >

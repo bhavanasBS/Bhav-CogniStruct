@@ -57,7 +57,7 @@ const LoginPage = () => {
           <div className="flex-1 flex flex-col justify-center -mt-8">
             <div className="mb-8">
               <p className="text-rose-400 text-sm font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Brain className="w-4 h-4" /> Intern Project 2026
+                
               </p>
               <h2 className="text-4xl font-bold text-white leading-tight mb-4">
                 Think Better,<br />
@@ -88,15 +88,7 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="pt-6 border-t border-white/10">
-            <p className="text-slate-400 text-sm">
-              Built with <span className="text-purple-400 font-medium">React</span> + <span className="text-rose-400 font-medium">ASP.NET Core</span>
-            </p>
-            <p className="text-slate-500 text-xs mt-1">
-              © 2026 CogniStruct. Human-centered design.
-            </p>
-          </div>
+
         </div>
       </div>
 
@@ -182,9 +174,7 @@ const LoginPage = () => {
             </div>
 
             {/* Footer Note */}
-            <p className="text-center text-xs text-slate-500 mt-4">
-              Contact your administrator for account access
-            </p>
+            
           </div>
         </div>
       </div>

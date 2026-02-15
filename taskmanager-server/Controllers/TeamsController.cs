@@ -191,6 +191,77 @@ public class TeamsController : ControllerBase
 
     // ─── Hierarchy ──────────────────────────────────
 
+    // ─── Full Organization Hierarchy ─────────────────
+    [Authorize(Roles = "Admin,Manager,TeamLead,HR")]
+    [HttpGet("hierarchy")]
+    public async Task<IActionResult> GetFullHierarchy()
+    {
+        // Get all teams with members
+        var teams = await _db.Teams
+            .Include(t => t.Manager)
+            .Include(t => t.Members).ThenInclude(m => m.User)
+                .ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(t => t.IsActive)
+            .ToListAsync();
+
+        // Find admin users to use as root
+        var admins = await _db.Users
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.UserRoles.Any(ur => ur.Role.RoleName == "Admin"))
+            .ToListAsync();
+
+        var root = new HierarchyNode
+        {
+            Id = 0,
+            Name = "Organization",
+            Role = "Organization",
+            Children = new List<HierarchyNode>()
+        };
+
+        // Group teams by manager
+        var managerTeams = teams.GroupBy(t => t.ManagerId).ToList();
+
+        foreach (var group in managerTeams)
+        {
+            var manager = group.First().Manager;
+            if (manager == null) continue;
+
+            var managerNode = new HierarchyNode
+            {
+                Id = manager.UserId,
+                Name = $"{manager.FirstName} {manager.LastName}",
+                Role = "Manager",
+                Children = group.Select(t => new HierarchyNode
+                {
+                    Id = t.TeamId,
+                    Name = t.TeamName,
+                    Role = "Team",
+                    Children = t.Members
+                        .Where(m => m.UserId != manager.UserId)
+                        .Select(m => new HierarchyNode
+                        {
+                            Id = m.UserId,
+                            Name = $"{m.User.FirstName} {m.User.LastName}",
+                            Role = m.User.UserRoles.FirstOrDefault()?.Role.RoleName ?? "Employee"
+                        }).ToList()
+                }).ToList()
+            };
+
+            root.Children.Add(managerNode);
+        }
+
+        // If there's only one admin/root, use them as root directly
+        if (admins.Count == 1 && root.Children.Count > 0)
+        {
+            var admin = admins.First();
+            root.Id = admin.UserId;
+            root.Name = $"{admin.FirstName} {admin.LastName}";
+            root.Role = "Admin";
+        }
+
+        return Ok(root);
+    }
+
     [HttpGet("hierarchy/{managerId}")]
     public async Task<IActionResult> GetHierarchy(int managerId)
     {

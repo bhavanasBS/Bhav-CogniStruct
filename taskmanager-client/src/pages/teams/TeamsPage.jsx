@@ -14,7 +14,18 @@ const TeamsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [managers, setManagers] = useState([]);
   const navigate = useNavigate();
+
+  // Fetch managers for the dropdown
+  const fetchManagers = async () => {
+    try {
+      const response = await teamApi.managerSearch('');
+      setManagers(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch managers:', error);
+    }
+  };
 
   const fetchTeams = async () => {
     try {
@@ -82,7 +93,7 @@ const TeamsPage = () => {
             </Button>
             <Button
               icon={Plus}
-              onClick={() => setShowForm(true)}
+              onClick={() => { fetchManagers(); setShowForm(true); }}
               className="!bg-white !text-emerald-600 hover:!bg-white/90"
             >
               New Team
@@ -148,6 +159,7 @@ const TeamsPage = () => {
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         onSubmit={handleCreateTeam}
+        managers={managers}
       />
     </div>
   );

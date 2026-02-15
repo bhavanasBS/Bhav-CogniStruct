@@ -43,7 +43,7 @@ const UserList = ({ users, onEdit, onToggleStatus, isLoading }) => {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {users.map((user) => (
-            <UserRow key={user.userId} user={user} onEdit={onEdit} onToggleStatus={onToggleStatus} />
+            <UserRow key={user.id || user.userId} user={user} onEdit={onEdit} onToggleStatus={onToggleStatus} />
           ))}
         </tbody>
       </table>
@@ -113,9 +113,8 @@ const UserRow = ({ user, onEdit, onToggleStatus }) => {
               </button>
               <button
                 onClick={() => { onToggleStatus?.(user); setShowMenu(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm cursor-pointer ${
-                  user.isActive ? 'text-danger-600 hover:bg-danger-50' : 'text-accent-600 hover:bg-accent-50'
-                }`}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm cursor-pointer ${user.isActive ? 'text-danger-600 hover:bg-danger-50' : 'text-accent-600 hover:bg-accent-50'
+                  }`}
               >
                 {user.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
                 {user.isActive ? 'Deactivate' : 'Activate'}

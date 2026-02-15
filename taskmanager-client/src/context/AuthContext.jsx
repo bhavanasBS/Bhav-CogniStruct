@@ -71,24 +71,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password, role) => {
+  const login = async (email, password) => {
     try {
-      const { data } = await authApi.login({ email, password, role });
+      const { data } = await authApi.login({ email, password });
       const { token, user } = data;
 
-      // Ensure the selected role is stored with user data
-      // Backend might not return role, so we add it from the login form
+      // Backend returns roles as an array: ["Admin"], ["Employee"], etc.
+      // Extract the primary role from the roles array
+      const primaryRole = (user.roles && user.roles.length > 0)
+        ? user.roles[0]
+        : (user.roleName || user.role || 'Employee');
+
       const userWithRole = {
         ...user,
-        roleName: user.roleName || role, // Use backend role if available, otherwise use selected role
-        role: user.role || role,
+        roleName: primaryRole,
+        role: primaryRole,
       };
 
       localStorage.setItem('auth_token', token);
       localStorage.setItem('auth_user', JSON.stringify(userWithRole));
       dispatch({ type: 'LOGIN_SUCCESS', payload: { user: userWithRole, token } });
       toast.success(`Welcome back, ${userWithRole.firstName || userWithRole.fullName || 'User'}!`);
-      return { success: true };
+      return { success: true, role: primaryRole };
     } catch (error) {
       // DEV MODE: Try mock authentication if backend fails
       if (DEV_MODE) {
@@ -102,7 +106,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('auth_user', JSON.stringify(userWithRole));
           dispatch({ type: 'LOGIN_SUCCESS', payload: { user: userWithRole, token: mockUser.token } });
           toast.success(`[DEV MODE] Welcome, ${mockUser.firstName}! Logged in as ${mockUser.role}`);
-          return { success: true };
+          return { success: true, role: mockUser.role };
         }
       }
 
