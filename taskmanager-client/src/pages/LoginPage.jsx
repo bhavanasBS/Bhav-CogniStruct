@@ -72,7 +72,7 @@ const LoginPage = () => {
             </div>
 
             {/* Features Grid - Organic Rounded Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {features.map((f) => (
                 <div
                   key={f.text}

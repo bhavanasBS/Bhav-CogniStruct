@@ -76,7 +76,7 @@ const LeaderboardPage = () => {
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
                 </div>
 
-                <div className="relative z-10 flex items-center justify-between">
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                             <Trophy className="w-7 h-7 text-white" />
@@ -123,7 +123,7 @@ const LeaderboardPage = () => {
             </div>
 
             {/* Top 3 Podium */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {leaderboard.slice(0, 3).map((user, index) => {
                     const position = index === 0 ? 1 : index === 1 ? 2 : 3;
                     const heights = { 1: 'h-32', 2: 'h-24', 3: 'h-20' };

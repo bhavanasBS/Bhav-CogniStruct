@@ -96,7 +96,7 @@ const UserForm = ({ isOpen, onClose, onSubmit, user = null, roles = [], isLoadin
     >
       <div className="space-y-4">
         {/* Name Fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name</label>
             <div className="relative">
@@ -149,7 +149,7 @@ const UserForm = ({ isOpen, onClose, onSubmit, user = null, roles = [], isLoadin
 
         {/* Password Fields - Only show for new users */}
         {!isEdit && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>

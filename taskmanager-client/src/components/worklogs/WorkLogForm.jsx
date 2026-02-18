@@ -89,7 +89,7 @@ const WorkLogForm = ({ isOpen, onClose, onSubmit, tasks = [], isLoading }) => {
           {errors.taskId && <p className="text-xs text-danger-500 mt-1">{errors.taskId}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Start Time</label>
             <input type="datetime-local" value={form.startTime} onChange={handleChange('startTime')} className={`input ${errors.startTime ? 'input-error' : ''}`} />

@@ -198,7 +198,7 @@ const EmployeeInsightsPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-white/5 border border-white/10 rounded-xl p-5">
                             <h3 className="text-sm text-gray-400 mb-2">Training Requests</h3>
-                            <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-center">
                                 <div className="bg-amber-500/20 rounded-lg p-3">
                                     <p className="text-xl font-bold text-amber-400">{data.skills.trainingRequests.pending}</p>
                                     <p className="text-xs text-gray-400">Pending</p>

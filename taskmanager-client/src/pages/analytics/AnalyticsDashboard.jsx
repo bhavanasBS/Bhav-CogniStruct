@@ -52,7 +52,7 @@ const AnalyticsDashboard = () => {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-white/5 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative z-10 flex items-center justify-between">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
               <BarChart3 className="w-7 h-7 text-white" />

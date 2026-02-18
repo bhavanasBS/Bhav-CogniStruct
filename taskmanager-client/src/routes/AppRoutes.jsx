@@ -40,9 +40,11 @@ import ManagerDashboard from '../pages/manager/ManagerDashboard';
 import MyTeamPage from '../pages/manager/MyTeamPage';
 import ApprovalQueue from '../pages/manager/ApprovalQueue';
 import TeamPulse from '../pages/manager/TeamPulse';
+import ManagerTimeLogsPage from '../pages/manager/ManagerTimeLogsPage';
 
 // Team Lead
 import TeamLeadDashboard from '../pages/teamlead/TeamLeadDashboard';
+import TeamLeadTimeLogsPage from '../pages/teamlead/TeamLeadTimeLogsPage';
 
 // Employee
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard';
@@ -177,9 +179,29 @@ const AppRoutes = () => {
             <MyTeamPage />
           </ProtectedRoute>
         } />
+        <Route path="/teamlead/tasks" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <TasksPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/teamlead/time-logs" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <TeamLeadTimeLogsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/teamlead/workload" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <WorkloadPage />
+          </ProtectedRoute>
+        } />
         <Route path="/manager/team" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
             <MyTeamPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/tasks" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <TasksPage />
           </ProtectedRoute>
         } />
         <Route path="/manager/approvals" element={
@@ -190,6 +212,16 @@ const AppRoutes = () => {
         <Route path="/manager/pulse" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
             <TeamPulse />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/time-logs" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <ManagerTimeLogsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/analytics" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <AnalyticsDashboard />
           </ProtectedRoute>
         } />
 

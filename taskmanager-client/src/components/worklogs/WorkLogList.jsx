@@ -11,7 +11,7 @@ const WorkLogList = ({ logs, onEdit, onDelete, isLoading }) => {
   }
 
   return (
-    <div className="table-container">
+    <div className="table-container overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200">
         <thead>
           <tr className="bg-slate-50">

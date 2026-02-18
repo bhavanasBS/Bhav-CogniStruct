@@ -70,7 +70,7 @@ const HRAnalyticsPage = () => {
                     <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
                 </div>
-                <div className="relative z-10 flex items-center justify-between">
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                             <BarChart3 className="w-7 h-7 text-white" />
@@ -196,7 +196,7 @@ const HRAnalyticsPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100">
                                 <p className="text-2xl font-bold text-emerald-700">{activeCount}</p>
                                 <p className="text-xs text-emerald-500 mt-1">Active Employees</p>

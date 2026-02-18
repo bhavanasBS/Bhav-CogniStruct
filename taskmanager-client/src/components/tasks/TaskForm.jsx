@@ -98,7 +98,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
           <textarea value={form.description} onChange={handleChange('description')} rows={3} className="input" placeholder="Describe the task details..." />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Assign To</label>
             <CustomSelect
@@ -123,7 +123,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="label">Priority</label>
             <CustomSelect

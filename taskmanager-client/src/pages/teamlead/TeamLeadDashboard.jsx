@@ -78,7 +78,7 @@ const TeamLeadDashboard = () => {
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
                 </div>
 
-                <div className="relative z-10 flex items-center justify-between">
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                             <Star className="w-7 h-7 text-white" />
@@ -102,7 +102,7 @@ const TeamLeadDashboard = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
@@ -187,7 +187,7 @@ const TeamLeadDashboard = () => {
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                             <div className="bg-white rounded-lg p-2 text-center">
                                                 <p className="text-lg font-bold text-slate-800">{team.members}</p>
                                                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">Members</p>
@@ -233,7 +233,7 @@ const TeamLeadDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                     onClick={() => navigate('/tasks')}
                     className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-amber-200 transition-all flex items-center gap-3 cursor-pointer group"

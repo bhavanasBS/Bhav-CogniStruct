@@ -80,7 +80,7 @@ const DailyGoalsPage = () => {
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
                 </div>
 
-                <div className="relative z-10 flex items-center justify-between">
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                             <Target className="w-7 h-7 text-white" />
@@ -105,7 +105,7 @@ const DailyGoalsPage = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Goals List */}
                 <div className="col-span-2 space-y-4">
                     {/* Add Goal */}

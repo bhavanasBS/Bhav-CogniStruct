@@ -70,7 +70,7 @@ const WorkloadPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">

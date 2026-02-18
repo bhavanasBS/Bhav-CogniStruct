@@ -72,6 +72,48 @@ public class WorkLogsController : ControllerBase
         return Ok(logs.Select(MapToDto));
     }
 
+    // ─── Team Work Logs (for Manager + TeamLead view) ─────────────
+    [Authorize(Roles = "Admin,Manager,TeamLead,Team Lead")]
+    [HttpGet("team/{userId}")]
+    public async Task<IActionResult> GetByTeam(int userId)
+    {
+        // Find team IDs where this user is the Manager
+        var managedTeamIds = await _db.Teams
+            .Where(t => t.ManagerId == userId && t.IsActive)
+            .Select(t => t.TeamId)
+            .ToListAsync();
+
+        // Find team IDs where this user is a member (covers TeamLeads)
+        var memberTeamIds = await _db.TeamMembers
+            .Where(tm => tm.UserId == userId && tm.Team.IsActive)
+            .Select(tm => tm.TeamId)
+            .ToListAsync();
+
+        // Combine both sets of team IDs
+        var allTeamIds = managedTeamIds.Union(memberTeamIds).Distinct().ToList();
+
+        // Get all member IDs from those teams
+        var teamMemberIds = await _db.TeamMembers
+            .Where(tm => allTeamIds.Contains(tm.TeamId))
+            .Select(tm => tm.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        // Include the user's own logs too
+        if (!teamMemberIds.Contains(userId))
+            teamMemberIds.Add(userId);
+
+        var logs = await _db.WorkLogs
+            .Include(w => w.Task)
+            .Include(w => w.User)
+            .Where(w => teamMemberIds.Contains(w.UserId))
+            .OrderByDescending(w => w.StartTime)
+            .Take(100)
+            .ToListAsync();
+
+        return Ok(logs.Select(MapToDto));
+    }
+
     [HttpGet("employee/{userId}/summary")]
     public async Task<IActionResult> GetEmployeeSummary(int userId)
     {

@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Bell, LogOut, User, Settings, ChevronDown, Menu } from 'lucide-react';
 import { useAuthContext } from '../../context/AuthContext';
 import { useNotificationContext } from '../../context/NotificationContext';
 import { getInitials, generateAvatarColor } from '../../utils/helpers';
 import { getPrimaryRole, getRoleBadgeColor } from '../../utils/roleUtils';
 
-const Header = () => {
+const Header = ({ onToggleSidebar }) => {
   const authCtx = useAuthContext();
   const user = authCtx?.user || { firstName: 'User', lastName: '', roles: [], email: '' };
   const logout = authCtx?.logout || (() => { });
@@ -34,14 +34,22 @@ const Header = () => {
   const avatarColor = generateAvatarColor(user?.firstName || '');
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-4 lg:px-6">
       {/* Left */}
-      <div className="flex items-center gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onToggleSidebar}
+          className="lg:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        <div className="hidden sm:block">
+          <h2 className="text-base lg:text-lg font-semibold text-slate-900">
             Welcome back, {user?.firstName || 'User'}
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-[11px] lg:text-xs text-slate-500">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -50,10 +58,14 @@ const Header = () => {
             })}
           </p>
         </div>
+        {/* Mobile: just show first name */}
+        <h2 className="sm:hidden text-sm font-semibold text-slate-900 truncate">
+          Hi, {user?.firstName || 'User'}
+        </h2>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Notification Bell */}
         <div ref={notifRef} className="relative">
           <button
@@ -61,17 +73,17 @@ const Header = () => {
               setShowNotifications(!showNotifications);
               setShowProfile(false);
             }}
-            className="relative p-2.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+            className="relative p-2 sm:p-2.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-danger-500 text-white text-[10px] font-bold px-1">
+              <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center rounded-full bg-danger-500 text-white text-[9px] sm:text-[10px] font-bold px-1">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-2 max-h-96 overflow-y-auto">
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-2 max-h-96 overflow-y-auto">
               <div className="px-4 py-3 border-b border-slate-100">
                 <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
               </div>
@@ -83,7 +95,7 @@ const Header = () => {
         </div>
 
         {/* Divider */}
-        <div className="w-px h-8 bg-slate-200 mx-1" />
+        <div className="w-px h-6 sm:h-8 bg-slate-200 mx-0.5 sm:mx-1" />
 
         {/* Profile Dropdown */}
         <div ref={profileRef} className="relative">
@@ -92,10 +104,10 @@ const Header = () => {
               setShowProfile(!showProfile);
               setShowNotifications(false);
             }}
-            className="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="flex items-center gap-2 sm:gap-3 p-1 sm:p-1.5 sm:pr-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <div
-              className={`w-8 h-8 rounded-lg ${avatarColor} text-white flex items-center justify-center text-xs font-bold`}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${avatarColor} text-white flex items-center justify-center text-[10px] sm:text-xs font-bold`}
             >
               {getInitials(user)}
             </div>

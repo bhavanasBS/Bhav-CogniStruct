@@ -66,7 +66,7 @@ const HRTeamsPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all">
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
@@ -156,7 +156,7 @@ const HRTeamsPage = () => {
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="bg-slate-50 rounded-lg p-3 text-center">
                                     <p className="text-lg font-bold text-slate-800">{team.memberCount || 0}</p>
                                     <p className="text-[10px] text-slate-400 uppercase tracking-wider">Members</p>
