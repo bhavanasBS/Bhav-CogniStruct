@@ -8,4 +8,6 @@ export const userApi = {
   updateStatus: (id, isActive) => api.patch(`/api/users/${id}/status`, { isActive }),
   updateRoles: (id, roleIds) => api.put(`/api/users/${id}/roles`, { roleIds }),
   getRoles: () => api.get('/api/roles'),
+  assignManager: (userId, managerId) => api.put(`/api/users/${userId}/assign-manager`, { managerId }),
+  getMyEmployees: () => api.get('/api/users/my-employees'),
 };

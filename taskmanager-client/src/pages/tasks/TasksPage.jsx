@@ -9,6 +9,8 @@ import TaskFilters from '../../components/tasks/TaskFilters';
 import Pagination from '../../components/common/Pagination';
 import { useNavigate } from 'react-router-dom';
 import { taskApi } from '../../api/taskApi';
+import { teamApi } from '../../api/teamApi';
+import { userApi } from '../../api/userApi';
 import toast from 'react-hot-toast';
 
 const TasksPage = () => {
@@ -21,6 +23,10 @@ const TasksPage = () => {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const navigate = useNavigate();
+
+  // Real employees and teams for task form
+  const [employees, setEmployees] = useState([]);
+  const [teams, setTeams] = useState([]);
 
   const fetchTasks = async () => {
     try {
@@ -46,19 +52,71 @@ const TasksPage = () => {
     }
   };
 
+  const fetchEmployeesAndTeams = async () => {
+    try {
+      const empRes = await userApi.getMyEmployees();
+      setEmployees((empRes.data || []).map(u => ({
+        userId: u.id || u.userId,
+        firstName: u.firstName,
+        lastName: u.lastName,
+      })));
+    } catch {
+      try {
+        const teamRes = await teamApi.getMyTeam();
+        const myTeams = teamRes.data || [];
+        if (myTeams.length > 0) {
+          const tid = myTeams[0].id || myTeams[0].teamId;
+          const membersRes = await teamApi.getMembers(tid);
+          setEmployees((membersRes.data || []).map(m => ({
+            userId: m.userId,
+            firstName: m.name?.split(' ')[0] || '',
+            lastName: m.name?.split(' ').slice(1).join(' ') || '',
+          })));
+        }
+      } catch { /* no employees */ }
+    }
+    try {
+      const teamRes = await teamApi.getAll();
+      setTeams((teamRes.data.items || teamRes.data || []).map(t => ({
+        teamId: t.id || t.teamId,
+        teamName: t.teamName,
+      })));
+    } catch {
+      try {
+        const teamRes = await teamApi.getMyTeam();
+        setTeams((teamRes.data || []).map(t => ({
+          teamId: t.id || t.teamId,
+          teamName: t.teamName,
+        })));
+      } catch { /* no teams */ }
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
   }, [page, search, filters]);
 
+  useEffect(() => {
+    fetchEmployeesAndTeams();
+  }, []);
+
   const handleCreateTask = async (data) => {
     try {
-      await taskApi.create(data);
+      await taskApi.create({
+        title: data.title,
+        description: data.description,
+        assigneeId: Number(data.assignedTo) || null,
+        teamId: Number(data.teamId) || null,
+        priority: data.priority,
+        deadline: data.deadline || null,
+        estimatedHours: data.estimatedHours,
+      });
       toast.success('Task created successfully');
       setShowForm(false);
       fetchTasks();
     } catch (error) {
       console.error('Failed to create task:', error);
-      toast.error('Failed to create task');
+      toast.error(error.response?.data?.message || 'Failed to create task');
     }
   };
 
@@ -184,7 +242,7 @@ const TasksPage = () => {
       {/* Content */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {viewMode === 'list' ? (
-          <TaskList tasks={tasks} isLoading={isLoading} onSelect={(t) => navigate(`/tasks/${t.taskId}`)} />
+          <TaskList tasks={tasks} isLoading={isLoading} onSelect={(t) => navigate(`/tasks/${t.id || t.taskId}`)} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-5">
             {isLoading ? (
@@ -196,7 +254,7 @@ const TasksPage = () => {
                 </div>
               ))
             ) : (
-              tasks.map((task) => <TaskCard key={task.taskId} task={task} onClick={(t) => navigate(`/tasks/${t.taskId}`)} />)
+              tasks.map((task) => <TaskCard key={task.id || task.taskId} task={task} onClick={(t) => navigate(`/tasks/${t.id || t.taskId}`)} />)
             )}
           </div>
         )}
@@ -208,6 +266,8 @@ const TasksPage = () => {
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         onSubmit={handleCreateTask}
+        employees={employees}
+        teams={teams}
       />
     </div>
   );

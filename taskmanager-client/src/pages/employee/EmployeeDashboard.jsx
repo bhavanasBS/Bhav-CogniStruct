@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Sparkles, CheckSquare, Clock, Target,
-    Flame, Trophy, TrendingUp, ArrowUpRight, Timer, Loader2, Star
+    Flame, Trophy, TrendingUp, ArrowUpRight, Loader2, Star
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -51,7 +51,7 @@ const EmployeeDashboard = () => {
 
             // Try to fetch today's work logs
             try {
-                const logsRes = await workLogApi.getAll({ userId: user.userId });
+                const logsRes = await workLogApi.getByEmployee(user.userId, {});
                 const logs = logsRes.data?.items || logsRes.data || [];
                 const todayLogs = logs.filter(l => {
                     const logDate = new Date(l.logDate || l.createdDate);
@@ -211,13 +211,13 @@ const EmployeeDashboard = () => {
                         ) : (
                             myTasks.map((task) => (
                                 <div
-                                    key={task.taskId}
+                                    key={task.id || task.taskId}
                                     className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                                    onClick={() => navigate(`/tasks/${task.taskId}`)}
+                                    onClick={() => navigate(`/tasks/${task.id || task.taskId}`)}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2 h-2 rounded-full ${task.priority === 2 ? 'bg-rose-500' :
-                                                task.priority === 1 ? 'bg-amber-500' : 'bg-emerald-500'
+                                            task.priority === 1 ? 'bg-amber-500' : 'bg-emerald-500'
                                             }`} />
                                         <div>
                                             <p className="font-medium text-slate-800">{task.title}</p>
@@ -255,16 +255,16 @@ const EmployeeDashboard = () => {
                             <div
                                 key={goal.id}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${goal.done
-                                        ? 'bg-emerald-50 border-emerald-200'
-                                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-emerald-50 border-emerald-200'
+                                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                                     }`}
                                 onClick={() => setDailyGoals(prev =>
                                     prev.map(g => g.id === goal.id ? { ...g, done: !g.done } : g)
                                 )}
                             >
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${goal.done
-                                        ? 'bg-emerald-500 border-emerald-500'
-                                        : 'border-slate-300'
+                                    ? 'bg-emerald-500 border-emerald-500'
+                                    : 'border-slate-300'
                                     }`}>
                                     {goal.done && <Star className="w-3 h-3 text-white" />}
                                 </div>
@@ -289,19 +289,9 @@ const EmployeeDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <button
-                    onClick={() => navigate('/employee/focus')}
-                    className="bg-gradient-to-r from-rose-500 to-pink-500 rounded-xl p-5 text-white hover:shadow-lg transition-all flex items-center gap-4 cursor-pointer group"
-                >
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Timer className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                        <p className="font-semibold text-lg">Start Focus Session</p>
-                        <p className="text-white/70 text-sm">25 min Pomodoro timer</p>
-                    </div>
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+
                 <button
                     onClick={() => navigate('/time-logs')}
                     className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-indigo-200 transition-all flex items-center gap-4 cursor-pointer group"

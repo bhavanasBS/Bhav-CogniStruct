@@ -2,10 +2,10 @@ import { getInitials, generateAvatarColor } from '../../utils/helpers';
 import { getRoleBadgeColor } from '../../utils/roleUtils';
 import Badge from '../common/Badge';
 import { formatDate } from '../../utils/dateUtils';
-import { MoreVertical, Edit2, UserCheck, UserX } from 'lucide-react';
+import { MoreVertical, Edit2, UserCheck, UserX, UserCog } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
-const UserList = ({ users, onEdit, onToggleStatus, isLoading }) => {
+const UserList = ({ users, onEdit, onToggleStatus, onAssignManager, isLoading }) => {
   if (isLoading) {
     return (
       <div className="table-container">
@@ -36,6 +36,7 @@ const UserList = ({ users, onEdit, onToggleStatus, isLoading }) => {
             <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">User</th>
             <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Email</th>
             <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Roles</th>
+            <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Manager</th>
             <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
             <th className="px-4 sm:px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Joined</th>
             <th className="px-4 sm:px-6 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
@@ -43,7 +44,7 @@ const UserList = ({ users, onEdit, onToggleStatus, isLoading }) => {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {users.map((user) => (
-            <UserRow key={user.id || user.userId} user={user} onEdit={onEdit} onToggleStatus={onToggleStatus} />
+            <UserRow key={user.id || user.userId} user={user} onEdit={onEdit} onToggleStatus={onToggleStatus} onAssignManager={onAssignManager} />
           ))}
         </tbody>
       </table>
@@ -51,7 +52,7 @@ const UserList = ({ users, onEdit, onToggleStatus, isLoading }) => {
   );
 };
 
-const UserRow = ({ user, onEdit, onToggleStatus }) => {
+const UserRow = ({ user, onEdit, onToggleStatus, onAssignManager }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
   const avatarColor = generateAvatarColor(user.firstName || '');
@@ -90,6 +91,13 @@ const UserRow = ({ user, onEdit, onToggleStatus }) => {
         </div>
       </td>
       <td className="px-6 py-4">
+        {user.managerName ? (
+          <span className="text-sm text-slate-700">{user.managerName}</span>
+        ) : (
+          <span className="text-xs text-slate-300 italic">Not assigned</span>
+        )}
+      </td>
+      <td className="px-6 py-4">
         <Badge variant={user.isActive ? 'success' : 'danger'} dot>
           {user.isActive ? 'Active' : 'Inactive'}
         </Badge>
@@ -104,12 +112,18 @@ const UserRow = ({ user, onEdit, onToggleStatus }) => {
             <MoreVertical className="h-4 w-4" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
+            <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
               <button
                 onClick={() => { onEdit?.(user); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <Edit2 className="h-3.5 w-3.5" /> Edit
+              </button>
+              <button
+                onClick={() => { onAssignManager?.(user); setShowMenu(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 cursor-pointer"
+              >
+                <UserCog className="h-3.5 w-3.5" /> Assign to Manager
               </button>
               <button
                 onClick={() => { onToggleStatus?.(user); setShowMenu(false); }}
@@ -128,3 +142,4 @@ const UserRow = ({ user, onEdit, onToggleStatus }) => {
 };
 
 export default UserList;
+

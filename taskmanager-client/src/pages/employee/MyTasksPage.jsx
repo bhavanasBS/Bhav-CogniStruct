@@ -46,7 +46,7 @@ const MyTasksPage = () => {
 
     const updateTaskStatus = async (taskId, newStatus) => {
         try {
-            await taskApi.update(taskId, { status: newStatus });
+            await taskApi.updateStatus(taskId, newStatus);
             toast.success('Task updated!');
             fetchTasks();
         } catch (error) {
@@ -164,8 +164,8 @@ const MyTasksPage = () => {
                             key={f.key}
                             onClick={() => setStatusFilter(f.key)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${statusFilter === f.key
-                                    ? 'bg-indigo-500 text-white'
-                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                ? 'bg-indigo-500 text-white'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                                 }`}
                         >
                             {f.label}
@@ -189,7 +189,7 @@ const MyTasksPage = () => {
                     ) : (
                         filteredTasks.map((task) => (
                             <div
-                                key={task.taskId}
+                                key={task.id || task.taskId}
                                 className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors group"
                             >
                                 <div className="flex items-center gap-4 flex-1">
@@ -199,14 +199,14 @@ const MyTasksPage = () => {
                                     {/* Status checkbox */}
                                     <button
                                         onClick={() => {
-                                            if (task.status === 0) updateTaskStatus(task.taskId, 1);
-                                            else if (task.status === 1) updateTaskStatus(task.taskId, 2);
+                                            if (task.status === 0) updateTaskStatus(task.id || task.taskId, 1);
+                                            else if (task.status === 1) updateTaskStatus(task.id || task.taskId, 2);
                                         }}
                                         className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${task.status === 2 || task.status === 3
-                                                ? 'bg-emerald-500 border-emerald-500'
-                                                : task.status === 1
-                                                    ? 'border-blue-400 bg-blue-50'
-                                                    : 'border-slate-300 hover:border-indigo-400'
+                                            ? 'bg-emerald-500 border-emerald-500'
+                                            : task.status === 1
+                                                ? 'border-blue-400 bg-blue-50'
+                                                : 'border-slate-300 hover:border-indigo-400'
                                             }`}
                                     >
                                         {(task.status === 2 || task.status === 3) && (
@@ -217,8 +217,8 @@ const MyTasksPage = () => {
                                     {/* Task info */}
                                     <div className="flex-1">
                                         <p className={`font-medium ${task.status === 2 || task.status === 3
-                                                ? 'text-slate-400 line-through'
-                                                : 'text-slate-800'
+                                            ? 'text-slate-400 line-through'
+                                            : 'text-slate-800'
                                             }`}>
                                             {task.title}
                                         </p>
@@ -228,8 +228,8 @@ const MyTasksPage = () => {
                                                 <>
                                                     <span className="text-slate-300">•</span>
                                                     <span className={`text-xs flex items-center gap-1 ${new Date(task.dueDate) < new Date() && task.status !== 2
-                                                            ? 'text-rose-500'
-                                                            : 'text-slate-400'
+                                                        ? 'text-rose-500'
+                                                        : 'text-slate-400'
                                                         }`}>
                                                         <Clock className="w-3 h-3" />
                                                         {new Date(task.dueDate).toLocaleDateString()}
@@ -248,7 +248,7 @@ const MyTasksPage = () => {
                                         {getStatusLabel(task.status)}
                                     </span>
                                     <button
-                                        onClick={() => navigate(`/tasks/${task.taskId}`)}
+                                        onClick={() => navigate(`/tasks/${task.id || task.taskId}`)}
                                         className="opacity-0 group-hover:opacity-100 p-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all cursor-pointer"
                                     >
                                         <ArrowUpRight className="w-4 h-4" />

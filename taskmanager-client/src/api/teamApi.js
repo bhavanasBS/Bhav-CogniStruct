@@ -8,7 +8,9 @@ export const teamApi = {
   addMember: (teamId, userId) => api.post(`/api/teams/${teamId}/members`, { userId }),
   removeMember: (teamId, userId) => api.delete(`/api/teams/${teamId}/members/${userId}`),
   getMembers: (teamId) => api.get(`/api/teams/${teamId}/members`),
+  getAvailableUsers: (teamId, search) => api.get(`/api/teams/${teamId}/available-users`, { params: { search } }),
   getHierarchy: (managerId) => api.get(`/api/teams/hierarchy/${managerId}`),
   getFullHierarchy: () => api.get('/api/teams/hierarchy'),
   managerSearch: (query) => api.get('/api/teams/manager-search', { params: { q: query } }),
+  getMyTeam: () => api.get('/api/teams/my-team'),
 };

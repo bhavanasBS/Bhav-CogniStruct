@@ -3,9 +3,9 @@ import { getRoleBadgeColor } from '../../utils/roleUtils';
 import { formatDate } from '../../utils/dateUtils';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
-import { UserMinus } from 'lucide-react';
+import { UserMinus, Loader2 } from 'lucide-react';
 
-const TeamMemberList = ({ members, onRemove, isLoading }) => {
+const TeamMemberList = ({ members, onRemove, isLoading, removingUserId }) => {
   if (isLoading) {
     return <div className="p-6 text-center text-sm text-slate-400">Loading members...</div>;
   }
@@ -18,8 +18,9 @@ const TeamMemberList = ({ members, onRemove, isLoading }) => {
     <div className="divide-y divide-slate-100">
       {members.map((member) => {
         const avatarColor = generateAvatarColor(member.firstName || member.fullName || '');
+        const isRemoving = removingUserId === member.userId;
         return (
-          <div key={member.userId} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors">
+          <div key={member.userId} className={`flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors ${isRemoving ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-lg ${avatarColor} text-white flex items-center justify-center text-xs font-bold`}>
                 {getInitials(member)}
@@ -39,9 +40,14 @@ const TeamMemberList = ({ members, onRemove, isLoading }) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemove(member)}
+                  disabled={isRemoving}
                   className="text-danger-500 hover:text-danger-700 hover:bg-danger-50"
                 >
-                  <UserMinus className="h-3.5 w-3.5" />
+                  {isRemoving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserMinus className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               )}
             </div>
@@ -53,3 +59,4 @@ const TeamMemberList = ({ members, onRemove, isLoading }) => {
 };
 
 export default TeamMemberList;
+

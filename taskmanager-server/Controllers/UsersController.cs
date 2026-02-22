@@ -43,25 +43,26 @@ public class UsersController : ControllerBase
             query = query.Where(u => u.IsActive == isActive);
         }
 
-        var users = await query.OrderBy(u => u.FirstName).ToListAsync();
-
-        var result = users.Select(u => new UserDto
-        {
-            Id = u.UserId,
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Email = u.Email,
-            Roles = u.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
-            IsActive = u.IsActive,
-            CreatedDate = u.CreatedDate
-        }).ToList();
+        var result = await query.OrderBy(u => u.FirstName)
+            .Select(u => new UserDto
+            {
+                Id = u.UserId,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                Roles = u.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
+                IsActive = u.IsActive,
+                CreatedDate = u.CreatedDate,
+                ManagerId = u.ManagerId,
+                ManagerName = u.Manager != null ? u.Manager.FirstName + " " + u.Manager.LastName : null
+            }).ToListAsync();
 
         return Ok(result);
     }
 
     // Admin and HR can view any user
     [Authorize(Roles = "Admin,HR")]
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
         var user = await _db.Users
@@ -202,5 +203,63 @@ public class UsersController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { message = "User deleted." });
+    }
+
+    // Admin can assign a reporting manager to a user
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}/assign-manager")]
+    public async Task<IActionResult> AssignManager(int id, [FromBody] AssignManagerRequest request)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return NotFound(new { message = "User not found." });
+
+        if (request.ManagerId.HasValue)
+        {
+            var manager = await _db.Users
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.UserId == request.ManagerId.Value);
+            if (manager == null) return NotFound(new { message = "Manager not found." });
+
+            // Prevent self-assignment
+            if (id == request.ManagerId.Value)
+                return BadRequest(new { message = "A user cannot be their own manager." });
+        }
+
+        user.ManagerId = request.ManagerId;
+        user.UpdatedDate = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = request.ManagerId.HasValue ? "Manager assigned." : "Manager removed." });
+    }
+
+    // Manager can view their direct reports
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpGet("my-employees")]
+    public async Task<IActionResult> GetMyEmployees()
+    {
+        var userIdClaim = User.FindFirst("UserId")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var currentUserId))
+            return Unauthorized();
+
+        var employees = await _db.Users
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.ManagerId == currentUserId && u.IsActive)
+            .OrderBy(u => u.FirstName)
+            .ToListAsync();
+
+        var result = employees.Select(u => new UserDto
+        {
+            Id = u.UserId,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            Roles = u.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
+            IsActive = u.IsActive,
+            CreatedDate = u.CreatedDate,
+            ManagerId = u.ManagerId
+        }).ToList();
+
+        return Ok(result);
     }
 }

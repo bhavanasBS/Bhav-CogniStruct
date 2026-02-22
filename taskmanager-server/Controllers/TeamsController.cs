@@ -29,10 +29,47 @@ public class TeamsController : ControllerBase
             .Include(t => t.Members)
             .AsQueryable();
 
+        // If the current user is a Manager (not Admin/HR), only show their teams
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("HR");
+        if (!isAdmin)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+            {
+                query = query.Where(t => t.ManagerId == currentUserId);
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(t => t.TeamName.Contains(search));
 
         var teams = await query.OrderBy(t => t.TeamName).ToListAsync();
+
+        return Ok(teams.Select(MapToDto));
+    }
+
+    // TeamLead/Employee can view teams they are a member of
+    [Authorize(Roles = "Admin,Manager,TeamLead,Employee")]
+    [HttpGet("my-team")]
+    public async Task<IActionResult> GetMyTeam()
+    {
+        var userIdClaim = User.FindFirst("UserId")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var currentUserId))
+            return Unauthorized();
+
+        var teamIds = await _db.Set<TeamMember>()
+            .Where(m => m.UserId == currentUserId)
+            .Select(m => m.TeamId)
+            .ToListAsync();
+
+        var teams = await _db.Teams
+            .Include(t => t.Manager)
+            .Include(t => t.Members)
+            .Where(t => teamIds.Contains(t.TeamId))
+            .OrderBy(t => t.TeamName)
+            .ToListAsync();
 
         return Ok(teams.Select(MapToDto));
     }
@@ -63,16 +100,26 @@ public class TeamsController : ControllerBase
         return Ok(dto);
     }
 
-    // Only Admin can create teams
-    [Authorize(Roles = "Admin")]
+    // Admin and Manager can create teams
+    [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTeamRequest request)
     {
+        // If a Manager is creating a team, auto-assign themselves as manager if not specified
+        var managerId = request.ManagerId;
+        if (!managerId.HasValue)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+                managerId = currentUserId;
+        }
+
         var team = new Team
         {
             TeamName = request.TeamName,
             Description = request.Description ?? string.Empty,
-            ManagerId = request.ManagerId,
+            ManagerId = managerId,
             IsActive = true,
             CreatedDate = DateTime.UtcNow
         };
@@ -81,15 +128,20 @@ public class TeamsController : ControllerBase
         await _db.SaveChangesAsync();
 
         // Add manager as member if specified
-        if (request.ManagerId.HasValue)
+        if (managerId.HasValue)
         {
-            _db.Set<TeamMember>().Add(new TeamMember
+            var alreadyMember = await _db.Set<TeamMember>()
+                .AnyAsync(m => m.TeamId == team.TeamId && m.UserId == managerId.Value);
+            if (!alreadyMember)
             {
-                TeamId = team.TeamId,
-                UserId = request.ManagerId.Value,
-                JoinedDate = DateTime.UtcNow
-            });
-            await _db.SaveChangesAsync();
+                _db.Set<TeamMember>().Add(new TeamMember
+                {
+                    TeamId = team.TeamId,
+                    UserId = managerId.Value,
+                    JoinedDate = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync();
+            }
         }
 
         return CreatedAtAction(nameof(GetById), new { id = team.TeamId }, new { team.TeamId, team.TeamName });
@@ -320,6 +372,51 @@ public class TeamsController : ControllerBase
             name = $"{u.FirstName} {u.LastName}",
             email = u.Email,
             role = u.UserRoles.FirstOrDefault()?.Role.RoleName ?? "Manager"
+        });
+
+        return Ok(result);
+    }
+
+    // Manager can list available users to add to a team
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpGet("{teamId}/available-users")]
+    public async Task<IActionResult> GetAvailableUsers(int teamId, [FromQuery] string? search)
+    {
+        var existingMemberIds = await _db.Set<TeamMember>()
+            .Where(m => m.TeamId == teamId)
+            .Select(m => m.UserId)
+            .ToListAsync();
+
+        var query = _db.Users
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive && !existingMemberIds.Contains(u.UserId));
+
+        // If the current user is a Manager (not Admin), only show their subordinates
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+            {
+                query = query.Where(u => u.ManagerId == currentUserId);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(u =>
+                u.FirstName.Contains(search) ||
+                u.LastName.Contains(search) ||
+                u.Email.Contains(search));
+
+        var users = await query.OrderBy(u => u.FirstName).Take(20).ToListAsync();
+
+        var result = users.Select(u => new
+        {
+            userId = u.UserId,
+            name = $"{u.FirstName} {u.LastName}",
+            email = u.Email,
+            role = u.UserRoles.FirstOrDefault()?.Role.RoleName ?? "Employee"
         });
 
         return Ok(result);

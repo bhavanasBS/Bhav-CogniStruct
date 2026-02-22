@@ -43,17 +43,9 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
     onSubmit({ ...form, priority: Number(form.priority), estimatedHours: Number(form.estimatedHours) });
   };
 
-  const employeeList = employees.length > 0 ? employees : [
-    { userId: 3, firstName: 'James', lastName: 'Wilson' },
-    { userId: 4, firstName: 'Emily', lastName: 'Davis' },
-    { userId: 7, firstName: 'David', lastName: 'Martinez' },
-  ];
+  const employeeList = employees;
 
-  const teamList = teams.length > 0 ? teams : [
-    { teamId: 1, teamName: 'Engineering' },
-    { teamId: 2, teamName: 'Design' },
-    { teamId: 3, teamName: 'QA & Testing' },
-  ];
+  const teamList = teams;
 
   // Convert to CustomSelect options format
   const employeeOptions = [

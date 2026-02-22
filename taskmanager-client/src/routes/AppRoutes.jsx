@@ -45,11 +45,12 @@ import ManagerTimeLogsPage from '../pages/manager/ManagerTimeLogsPage';
 // Team Lead
 import TeamLeadDashboard from '../pages/teamlead/TeamLeadDashboard';
 import TeamLeadTimeLogsPage from '../pages/teamlead/TeamLeadTimeLogsPage';
+import TeamDailyUpdatesPage from '../pages/teamlead/TeamDailyUpdatesPage';
+import TeamLeadTeamPage from '../pages/teamlead/TeamLeadTeamPage';
 
 // Employee
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard';
 import MyTasksPage from '../pages/employee/MyTasksPage';
-import FocusMode from '../pages/employee/FocusMode';
 import DailyGoalsPage from '../pages/employee/DailyGoalsPage';
 import SkillProgressPage from '../pages/employee/SkillProgressPage';
 import PeerRecognitionPage from '../pages/employee/PeerRecognitionPage';
@@ -64,7 +65,7 @@ import HRTimeLogsPage from '../pages/hr/HRTimeLogsPage';
 
 // Gamification
 import LeaderboardPage from '../pages/LeaderboardPage';
-import AchievementsPage from '../pages/AchievementsPage';
+
 
 // Settings
 import SettingsPage from '../pages/SettingsPage';
@@ -176,7 +177,7 @@ const AppRoutes = () => {
         } />
         <Route path="/teamlead/team" element={
           <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
-            <MyTeamPage />
+            <TeamLeadTeamPage />
           </ProtectedRoute>
         } />
         <Route path="/teamlead/tasks" element={
@@ -194,8 +195,13 @@ const AppRoutes = () => {
             <WorkloadPage />
           </ProtectedRoute>
         } />
+        <Route path="/teamlead/daily-updates" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <TeamDailyUpdatesPage />
+          </ProtectedRoute>
+        } />
         <Route path="/manager/team" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <MyTeamPage />
           </ProtectedRoute>
         } />
@@ -236,11 +242,7 @@ const AppRoutes = () => {
             <MyTasksPage />
           </ProtectedRoute>
         } />
-        <Route path="/employee/focus" element={
-          <ProtectedRoute>
-            <FocusMode />
-          </ProtectedRoute>
-        } />
+
         <Route path="/employee/goals" element={
           <ProtectedRoute>
             <DailyGoalsPage />
@@ -271,11 +273,7 @@ const AppRoutes = () => {
             <LeaderboardPage />
           </ProtectedRoute>
         } />
-        <Route path="/employee/achievements" element={
-          <ProtectedRoute>
-            <AchievementsPage />
-          </ProtectedRoute>
-        } />
+
 
         {/* ─── HR Routes ─────────────────────────────── */}
         <Route path="/hr/dashboard" element={
@@ -315,11 +313,7 @@ const AppRoutes = () => {
             <LeaderboardPage />
           </ProtectedRoute>
         } />
-        <Route path="/achievements" element={
-          <ProtectedRoute>
-            <AchievementsPage />
-          </ProtectedRoute>
-        } />
+
         <Route path="/settings" element={
           <ProtectedRoute>
             <SettingsPage />

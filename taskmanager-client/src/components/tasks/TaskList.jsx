@@ -53,15 +53,15 @@ const TaskList = ({ tasks, onSelect, isLoading }) => {
 
             return (
               <tr
-                key={task.taskId}
+                key={task.id || task.taskId}
                 className="group hover:bg-indigo-50/50 cursor-pointer transition-all duration-200"
                 onClick={() => onSelect?.(task)}
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-10 rounded-full ${task.status === 2 ? 'bg-emerald-500' :
-                        task.status === 1 ? 'bg-blue-500' :
-                          task.status === 3 ? 'bg-rose-500' : 'bg-amber-500'
+                      task.status === 1 ? 'bg-blue-500' :
+                        task.status === 3 ? 'bg-rose-500' : 'bg-amber-500'
                       }`} />
                     <div>
                       <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors line-clamp-1">
@@ -96,8 +96,8 @@ const TaskList = ({ tasks, onSelect, isLoading }) => {
                     <div>
                       <p className="text-sm text-slate-700 font-medium">{formatDate(task.deadline)}</p>
                       <p className={`text-xs font-semibold ${days < 0 ? 'text-rose-500' :
-                          days <= 2 ? 'text-amber-600' :
-                            'text-slate-400'
+                        days <= 2 ? 'text-amber-600' :
+                          'text-slate-400'
                         }`}>
                         {getRelativeTime(task.deadline)}
                       </p>

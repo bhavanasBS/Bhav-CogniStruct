@@ -21,6 +21,10 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    // Reporting Manager (org hierarchy)
+    public int? ManagerId { get; set; }
+    public User? Manager { get; set; }
+
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
 
@@ -35,4 +39,6 @@ public class User
     public ICollection<WorkLog> WorkLogs { get; set; } = new List<WorkLog>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Team> ManagedTeams { get; set; } = new List<Team>();
+    public ICollection<DailyUpdateStatus> DailyUpdates { get; set; } = new List<DailyUpdateStatus>();
+    public ICollection<User> Subordinates { get; set; } = new List<User>();
 }

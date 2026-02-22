@@ -19,8 +19,8 @@ public class TasksController : ControllerBase
         _db = db;
     }
 
-    // Admin, Manager, TeamLead can view all tasks
-    [Authorize(Roles = "Admin,Manager,TeamLead")]
+    // All authenticated users can view tasks (employees see only their own)
+    [Authorize(Roles = "Admin,Manager,TeamLead,Employee")]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
@@ -28,11 +28,19 @@ public class TasksController : ControllerBase
         [FromQuery] string? priority,
         [FromQuery] int? teamId)
     {
-        var query = _db.Tasks
-            .Include(t => t.Assignee)
-            .Include(t => t.Assigner)
-            .Include(t => t.Team)
-            .AsQueryable();
+        var query = _db.Tasks.AsQueryable();
+
+        // If the user is an Employee, only show tasks assigned to them
+        var isPrivileged = User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("TeamLead");
+        if (!isPrivileged)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+            {
+                query = query.Where(t => t.AssigneeId == currentUserId);
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(t => t.Title.Contains(search) || t.Description.Contains(search));
@@ -46,9 +54,29 @@ public class TasksController : ControllerBase
         if (teamId.HasValue)
             query = query.Where(t => t.TeamId == teamId.Value);
 
-        var tasks = await query.OrderByDescending(t => t.CreatedDate).ToListAsync();
+        var tasks = await query.OrderByDescending(t => t.CreatedDate)
+            .Select(t => new TaskDto
+            {
+                Id = t.TaskId,
+                Title = t.Title,
+                Description = t.Description,
+                AssigneeId = t.AssigneeId,
+                AssigneeName = t.Assignee != null ? t.Assignee.FirstName + " " + t.Assignee.LastName : null,
+                AssignerId = t.AssignerId,
+                AssignerName = t.Assigner != null ? t.Assigner.FirstName + " " + t.Assigner.LastName : null,
+                TeamId = t.TeamId,
+                TeamName = t.Team != null ? t.Team.TeamName : null,
+                Priority = t.Priority,
+                Status = t.Status,
+                Deadline = t.Deadline,
+                EstimatedHours = t.EstimatedHours,
+                CreatedDate = t.CreatedDate,
+                UpdatedDate = t.UpdatedDate,
+                CompletedDate = t.CompletedDate,
+                TotalLoggedHours = t.WorkLogs != null ? t.WorkLogs.Sum(w => w.TotalHours) : 0
+            }).ToListAsync();
 
-        return Ok(tasks.Select(MapToDto));
+        return Ok(tasks);
     }
 
     [HttpGet("{id}")]

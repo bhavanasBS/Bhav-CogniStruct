@@ -15,14 +15,13 @@ import {
   Brain,
   Sparkles,
   Target,
-  Timer,
   CheckSquare,
   Settings,
   Trophy,
-  Award,
   Heart,
   FileText,
   TrendingUp,
+  Mail,
   X,
 } from 'lucide-react';
 import { useAuthContext } from '../../context/AuthContext';
@@ -55,6 +54,7 @@ const getNavigationByRole = (userRole) => {
       { name: 'Team Dashboard', href: '/teamlead/dashboard', icon: LayoutDashboard, color: 'from-amber-500 to-orange-600' },
       { name: 'My Team', href: '/teamlead/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
       { name: 'Tasks', href: '/teamlead/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
+      { name: 'Team Updates', href: '/teamlead/daily-updates', icon: Mail, color: 'from-sky-500 to-blue-600' },
       { name: 'Time Logs', href: '/teamlead/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Workload', href: '/teamlead/workload', icon: Scale, color: 'from-rose-500 to-rose-600' },
     ],
@@ -63,14 +63,12 @@ const getNavigationByRole = (userRole) => {
     employee: [
       { name: 'My Dashboard', href: '/employee/dashboard', icon: LayoutDashboard, color: 'from-purple-500 to-purple-600' },
       { name: 'My Tasks', href: '/employee/tasks', icon: CheckSquare, color: 'from-blue-500 to-blue-600' },
-      { name: 'Focus Mode', href: '/employee/focus', icon: Timer, color: 'from-rose-500 to-rose-600' },
       { name: 'Time Logs', href: '/employee/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
-      { name: 'My Goals', href: '/employee/goals', icon: Target, color: 'from-emerald-500 to-emerald-600' },
+      { name: 'Daily Update', href: '/employee/goals', icon: Mail, color: 'from-sky-500 to-blue-600' },
       { name: 'Skill Progress', href: '/employee/skills', icon: TrendingUp, color: 'from-violet-500 to-violet-600' },
       { name: 'Peer Recognition', href: '/employee/recognition', icon: Heart, color: 'from-rose-500 to-pink-600' },
       { name: 'Weekly Reflection', href: '/employee/reflection', icon: FileText, color: 'from-teal-500 to-cyan-600' },
       { name: 'Leaderboard', href: '/employee/leaderboard', icon: Trophy, color: 'from-amber-400 to-orange-500' },
-      { name: 'Achievements', href: '/employee/achievements', icon: Award, color: 'from-indigo-500 to-purple-600' },
     ],
 
     // HR — all /hr/ prefixed

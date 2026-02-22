@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
+    public DbSet<DailyUpdateStatus> DailyUpdateStatuses => Set<DailyUpdateStatus>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,23 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<UserSettings>()
             .HasIndex(us => us.UserId)
+            .IsUnique();
+
+        // ─── DailyUpdateStatus ─────────────────────
+        modelBuilder.Entity<DailyUpdateStatus>()
+            .HasOne(d => d.User)
+            .WithMany(u => u.DailyUpdates)
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DailyUpdateStatus>()
+            .HasOne(d => d.AcknowledgedBy)
+            .WithMany()
+            .HasForeignKey(d => d.AcknowledgedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<DailyUpdateStatus>()
+            .HasIndex(d => new { d.UserId, d.UpdateDate })
             .IsUnique();
     }
 }
