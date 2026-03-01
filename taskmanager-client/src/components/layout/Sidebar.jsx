@@ -22,6 +22,8 @@ import {
   FileText,
   TrendingUp,
   Mail,
+  FolderKanban,
+  ShieldAlert,
   X,
 } from 'lucide-react';
 import { useAuthContext } from '../../context/AuthContext';
@@ -43,6 +45,7 @@ const getNavigationByRole = (userRole) => {
       { name: 'My Dashboard', href: '/manager/dashboard', icon: LayoutDashboard, color: 'from-cyan-500 to-cyan-600' },
       { name: 'My Team', href: '/manager/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
       { name: 'Tasks', href: '/manager/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
+      { name: 'Projects', href: '/manager/projects', icon: FolderKanban, color: 'from-violet-500 to-indigo-600' },
       { name: 'Approvals', href: '/manager/approvals', icon: CheckSquare, color: 'from-amber-500 to-amber-600' },
       { name: 'Team Pulse', href: '/manager/pulse', icon: Target, color: 'from-rose-500 to-rose-600' },
       { name: 'Time Logs', href: '/manager/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
@@ -52,11 +55,13 @@ const getNavigationByRole = (userRole) => {
     // Team Lead — all /teamlead/ prefixed
     teamLead: [
       { name: 'Team Dashboard', href: '/teamlead/dashboard', icon: LayoutDashboard, color: 'from-amber-500 to-orange-600' },
+      { name: 'My Projects', href: '/teamlead/projects', icon: FolderKanban, color: 'from-purple-500 to-indigo-600' },
       { name: 'My Team', href: '/teamlead/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
       { name: 'Tasks', href: '/teamlead/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
       { name: 'Team Updates', href: '/teamlead/daily-updates', icon: Mail, color: 'from-sky-500 to-blue-600' },
       { name: 'Time Logs', href: '/teamlead/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Workload', href: '/teamlead/workload', icon: Scale, color: 'from-rose-500 to-rose-600' },
+      { name: 'Pause Requests', href: '/teamlead/pause-requests', icon: ShieldAlert, color: 'from-red-500 to-red-600' },
     ],
 
     // Employee — all /employee/ prefixed

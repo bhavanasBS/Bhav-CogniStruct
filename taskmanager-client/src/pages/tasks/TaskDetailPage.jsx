@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit2, Clock, Calendar, User, Flag, CheckCircle2,
   AlertTriangle, Timer, FileText, Users, Sparkles, ChevronRight,
-  Circle, Zap, TrendingUp
+  Circle, Zap, TrendingUp, Pause, Play
 } from 'lucide-react';
 import TaskStatusBadge from '../../components/tasks/TaskStatusBadge';
 import { TASK_PRIORITY_LABELS, TASK_PRIORITY_COLORS, TASK_STATUS_LABELS } from '../../utils/constants';
@@ -11,6 +11,7 @@ import { formatDateTime, getRelativeTime, daysUntil } from '../../utils/dateUtil
 import { PageLoader } from '../../components/common/LoadingSpinner';
 import { taskApi } from '../../api/taskApi';
 import { workLogApi } from '../../api/workLogApi';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const TaskDetailPage = () => {
@@ -81,7 +82,41 @@ const TaskDetailPage = () => {
       toast.success(`Task marked as ${TASK_STATUS_LABELS[newStatus]}`);
     } catch (error) {
       console.error('Failed to update status:', error);
-      toast.error('Failed to update task status');
+      toast.error(error.response?.data?.message || 'Failed to update task status');
+    }
+  };
+
+  // Confirmation modal state
+  const [confirmAction, setConfirmAction] = useState(null); // 'pause' | 'resume' | null
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handlePause = async () => {
+    try {
+      setActionLoading(true);
+      const api = (await import('../../api/axiosInstance')).default;
+      await api.patch(`/api/tasks/${task.taskId}/pause`, { reason: 'Paused from task detail' });
+      setTask((prev) => ({ ...prev, status: 4 }));
+      toast.success('Task paused successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to pause task');
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      setActionLoading(true);
+      const api = (await import('../../api/axiosInstance')).default;
+      await api.patch(`/api/tasks/${task.taskId}/resume`);
+      setTask((prev) => ({ ...prev, status: 2 }));
+      toast.success('Task resumed successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to resume task');
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
     }
   };
 
@@ -107,6 +142,7 @@ const TaskDetailPage = () => {
     0: { label: 'Low', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
     1: { label: 'Medium', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-500' },
     2: { label: 'High', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', dot: 'bg-rose-500' },
+    3: { label: 'Critical', color: 'text-red-900', bg: 'bg-red-100', border: 'border-red-300', dot: 'bg-red-600' },
   };
   const priority = priorityConfig[task.priority] || priorityConfig[0];
 
@@ -115,6 +151,7 @@ const TaskDetailPage = () => {
     1: { label: 'In Progress', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: Zap, gradient: 'from-blue-500 to-indigo-500' },
     2: { label: 'Completed', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: CheckCircle2, gradient: 'from-emerald-500 to-teal-500' },
     3: { label: 'Overdue', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', icon: AlertTriangle, gradient: 'from-rose-500 to-pink-500' },
+    4: { label: 'Paused', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', icon: Circle, gradient: 'from-amber-400 to-orange-500' },
   };
   const status = statusConfig[task.status] || statusConfig[0];
   const StatusIcon = status.icon;
@@ -221,6 +258,38 @@ const TaskDetailPage = () => {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Pause/Resume Controls */}
+          {(isTeamLead || isAdmin) && task.status !== 3 && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                  {task.status === 4 ? <Play className="w-4 h-4 text-white" /> : <Pause className="w-4 h-4 text-white" />}
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900">Pause Controls</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                {task.status !== 4 ? (
+                  <button
+                    onClick={() => setConfirmAction('pause')}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+                  >
+                    <Pause className="w-4 h-4" /> Pause Task
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmAction('resume')}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+                  >
+                    <Play className="w-4 h-4" /> Resume Task
+                  </button>
+                )}
+                <span className="text-xs text-slate-400">
+                  {task.status === 4 ? 'Task is currently paused' : 'Pause will block work logging and completion'}
+                </span>
               </div>
             </div>
           )}
@@ -488,6 +557,30 @@ const TaskDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Pause/Resume Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmAction === 'pause'}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handlePause}
+        title="Pause This Task?"
+        message="Work logging and completion will be blocked while the task is paused. You can resume it at any time."
+        confirmLabel="Pause Task"
+        variant="warning"
+        icon={Pause}
+        isLoading={actionLoading}
+      />
+      <ConfirmModal
+        isOpen={confirmAction === 'resume'}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleResume}
+        title="Resume This Task?"
+        message="The task will be set back to In Progress and work logging will be re-enabled."
+        confirmLabel="Resume Task"
+        variant="success"
+        icon={Play}
+        isLoading={actionLoading}
+      />
     </div>
   );
 };

@@ -37,6 +37,7 @@ import WorkloadPage from '../pages/workload/WorkloadPage';
 // Manager
 import ManagerSearchPage from '../pages/manager/ManagerSearchPage';
 import ManagerDashboard from '../pages/manager/ManagerDashboard';
+import ManagerProjectsPage from '../pages/manager/ManagerProjectsPage';
 import MyTeamPage from '../pages/manager/MyTeamPage';
 import ApprovalQueue from '../pages/manager/ApprovalQueue';
 import TeamPulse from '../pages/manager/TeamPulse';
@@ -47,6 +48,9 @@ import TeamLeadDashboard from '../pages/teamlead/TeamLeadDashboard';
 import TeamLeadTimeLogsPage from '../pages/teamlead/TeamLeadTimeLogsPage';
 import TeamDailyUpdatesPage from '../pages/teamlead/TeamDailyUpdatesPage';
 import TeamLeadTeamPage from '../pages/teamlead/TeamLeadTeamPage';
+import MyProjectsPage from '../pages/teamlead/MyProjectsPage';
+import ProjectDetailPage from '../pages/teamlead/ProjectDetailPage';
+import PauseRequestsPage from '../pages/teamlead/PauseRequestsPage';
 
 // Employee
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard';
@@ -66,6 +70,10 @@ import HRTimeLogsPage from '../pages/hr/HRTimeLogsPage';
 // Gamification
 import LeaderboardPage from '../pages/LeaderboardPage';
 
+
+// Profile
+import MyProfilePage from '../pages/MyProfilePage';
+import PublicProfilePage from '../pages/PublicProfilePage';
 
 // Settings
 import SettingsPage from '../pages/SettingsPage';
@@ -168,6 +176,11 @@ const AppRoutes = () => {
             <ManagerDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/manager/projects" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <ManagerProjectsPage />
+          </ProtectedRoute>
+        } />
 
         {/* ─── Team Lead Routes ──────────────────────── */}
         <Route path="/teamlead/dashboard" element={
@@ -185,6 +198,16 @@ const AppRoutes = () => {
             <TasksPage />
           </ProtectedRoute>
         } />
+        <Route path="/teamlead/projects" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <MyProjectsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/teamlead/projects/:id" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <ProjectDetailPage />
+          </ProtectedRoute>
+        } />
         <Route path="/teamlead/time-logs" element={
           <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
             <TeamLeadTimeLogsPage />
@@ -193,6 +216,11 @@ const AppRoutes = () => {
         <Route path="/teamlead/workload" element={
           <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
             <WorkloadPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/teamlead/pause-requests" element={
+          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
+            <PauseRequestsPage />
           </ProtectedRoute>
         } />
         <Route path="/teamlead/daily-updates" element={
@@ -314,6 +342,37 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
 
+        {/* ─── Role-Based Profile Routes ──────────────── */}
+        <Route path="/admin/profile" element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <MyProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/profile" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <MyProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/teamlead/profile" element={
+          <ProtectedRoute allowedRoles={['Admin', 'TeamLead', 'Team Lead']}>
+            <MyProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/employee/profile" element={
+          <ProtectedRoute>
+            <MyProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/hr/profile" element={
+          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
+            <MyProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/view-profile/:userId" element={
+          <ProtectedRoute>
+            <PublicProfilePage />
+          </ProtectedRoute>
+        } />
         <Route path="/settings" element={
           <ProtectedRoute>
             <SettingsPage />

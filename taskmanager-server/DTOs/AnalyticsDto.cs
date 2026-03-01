@@ -74,6 +74,13 @@ public class WorkloadMemberDto
     public double Hours { get; set; }
     public double MaxHours { get; set; }
     public int Workload { get; set; }
+
+    // Effort-based breakdown
+    public double EffortScore { get; set; }
+    public double WeeklyScore { get; set; }
+    public double PriorityScore { get; set; }
+    public double DeadlineScore { get; set; }
+    public int PausedTasks { get; set; }
 }
 
 public class TeamWorkloadDto
@@ -88,6 +95,35 @@ public class WorkloadRecommendationDto
     public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public int CurrentTasks { get; set; }
+    public int Workload { get; set; }
+    public int ProjectedWorkload { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}
+
+// ─── Consistency Score DTOs ────────────────────────
+
+public class ConsistencyScoreDto
+{
+    public int UserId { get; set; }
+    public double ConsistencyRaw { get; set; }
+    public double VarianceScore { get; set; }
+    public double AdherenceScore { get; set; }
+    public double OverdueScore { get; set; }
+    public int CompletedTasksCount { get; set; }
+}
+
+// ─── Assignment Suggestion DTOs ────────────────────
+
+public class AssignmentSuggestionDto
+{
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public double SkillMatchPercentage { get; set; }
+    public double SkillScore { get; set; }
+    public double AvailabilityScore { get; set; }
+    public double PerformanceScore { get; set; }
+    public double ConsistencyScore { get; set; }
+    public double AssignmentScore { get; set; }
     public int Workload { get; set; }
     public string Reason { get; set; } = string.Empty;
 }

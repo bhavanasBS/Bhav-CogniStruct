@@ -167,7 +167,7 @@ public class AnalyticsController : ControllerBase
 
         var statusNames = new Dictionary<int, string>
         {
-            { 0, "Pending" }, { 1, "Assigned" }, { 2, "In Progress" }, { 3, "Completed" }
+            { 0, "Pending" }, { 1, "Assigned" }, { 2, "In Progress" }, { 3, "Completed" }, { 4, "Paused" }
         };
 
         var distribution = tasks
@@ -211,5 +211,96 @@ public class AnalyticsController : ControllerBase
         }).ToList();
 
         return Ok(hours);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // CONSISTENCY SCORE — Dynamic computation (no DB storage)
+    // ═══════════════════════════════════════════════════
+
+    [HttpGet("consistency/{employeeId}")]
+    public async Task<IActionResult> GetConsistency(int employeeId)
+    {
+        return Ok(await ComputeConsistencyScore(employeeId));
+    }
+
+    internal async Task<ConsistencyScoreDto> ComputeConsistencyScore(int employeeId)
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-30);
+
+        var completedTasks = await _db.Tasks
+            .Include(t => t.WorkLogs)
+            .Where(t => t.AssigneeId == employeeId
+                     && t.Status == 3
+                     && t.ParentTaskId != null // Only subtasks count
+                     && t.CompletedDate.HasValue
+                     && t.CompletedDate >= cutoff)
+            .ToListAsync();
+
+        var count = completedTasks.Count;
+
+        // Edge case: fewer than 3 completed tasks → default 70
+        if (count < 3)
+        {
+            return new ConsistencyScoreDto
+            {
+                UserId = employeeId,
+                ConsistencyRaw = 70,
+                VarianceScore = 28,
+                AdherenceScore = 28,
+                OverdueScore = 14,
+                CompletedTasksCount = count
+            };
+        }
+
+        // A. Delivery Variance Score (max 40)
+        var variances = completedTasks
+            .Where(t => t.EstimatedHours > 0)
+            .Select(t =>
+            {
+                var actualHours = t.WorkLogs.Where(w => w.UserId == employeeId).Sum(w => w.TotalHours);
+                if (actualHours <= 0) actualHours = t.EstimatedHours; // fallback
+                return Math.Abs(actualHours - t.EstimatedHours) / t.EstimatedHours;
+            })
+            .ToList();
+
+        var avgVariance = variances.Any() ? variances.Average() : 0;
+        var varianceScore = Math.Clamp((1.0 - avgVariance) * 40.0, 0, 40);
+
+        // B. Deadline Adherence Score (max 40)
+        var tasksWithDeadline = completedTasks.Where(t => t.Deadline.HasValue).ToList();
+        double adherenceScore;
+        if (tasksWithDeadline.Any())
+        {
+            var onTime = tasksWithDeadline.Count(t => t.CompletedDate!.Value <= t.Deadline!.Value);
+            adherenceScore = ((double)onTime / tasksWithDeadline.Count) * 40.0;
+        }
+        else
+        {
+            adherenceScore = 30; // neutral if no deadlines set
+        }
+
+        // C. Overdue Stability Score (max 20)
+        double overdueScore;
+        if (tasksWithDeadline.Any())
+        {
+            var overdue = tasksWithDeadline.Count(t => t.CompletedDate!.Value > t.Deadline!.Value);
+            overdueScore = (1.0 - (double)overdue / tasksWithDeadline.Count) * 20.0;
+        }
+        else
+        {
+            overdueScore = 15; // neutral
+        }
+
+        var raw = Math.Clamp(Math.Round(varianceScore + adherenceScore + overdueScore, 1), 0, 100);
+
+        return new ConsistencyScoreDto
+        {
+            UserId = employeeId,
+            ConsistencyRaw = raw,
+            VarianceScore = Math.Round(varianceScore, 1),
+            AdherenceScore = Math.Round(adherenceScore, 1),
+            OverdueScore = Math.Round(overdueScore, 1),
+            CompletedTasksCount = count
+        };
     }
 }

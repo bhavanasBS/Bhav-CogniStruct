@@ -48,29 +48,3 @@ public class AuthController : ControllerBase
     }
 }
 
-[ApiController]
-[Route("api/users")]
-public class UsersMeController : ControllerBase
-{
-    private readonly IAuthService _auth;
-
-    public UsersMeController(IAuthService auth)
-    {
-        _auth = auth;
-    }
-
-    [Authorize]
-    [HttpGet("me")]
-    public async Task<IActionResult> GetCurrentUser()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
-            return Unauthorized();
-
-        var user = await _auth.GetCurrentUserAsync(userId);
-        if (user == null)
-            return NotFound();
-
-        return Ok(user);
-    }
-}

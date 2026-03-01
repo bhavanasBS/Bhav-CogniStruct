@@ -22,6 +22,16 @@ public class WorkLogsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateWorkLogRequest request)
     {
+        // Block work logs on paused tasks
+        var task = await _db.Tasks
+            .Include(t => t.ParentTask)
+            .FirstOrDefaultAsync(t => t.TaskId == request.TaskId);
+        if (task != null && task.Status == 4)
+            return BadRequest(new { message = "Cannot log work on a paused task. Resume it first." });
+        // Block work logs if parent project is paused
+        if (task?.ParentTaskId != null && task.ParentTask?.Status == 4)
+            return BadRequest(new { message = "Cannot log work while parent project is paused." });
+
         var workLog = new WorkLog
         {
             TaskId = request.TaskId,

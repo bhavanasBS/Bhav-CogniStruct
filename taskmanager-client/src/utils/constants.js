@@ -13,6 +13,7 @@ export const TASK_STATUS = {
   IN_PROGRESS: 1,
   COMPLETED: 2,
   OVERDUE: 3,
+  PAUSED: 4,
 };
 
 export const TASK_STATUS_LABELS = {
@@ -20,6 +21,7 @@ export const TASK_STATUS_LABELS = {
   [TASK_STATUS.IN_PROGRESS]: 'In Progress',
   [TASK_STATUS.COMPLETED]: 'Completed',
   [TASK_STATUS.OVERDUE]: 'Overdue',
+  [TASK_STATUS.PAUSED]: 'Paused',
 };
 
 export const TASK_STATUS_COLORS = {
@@ -27,24 +29,28 @@ export const TASK_STATUS_COLORS = {
   [TASK_STATUS.IN_PROGRESS]: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
   [TASK_STATUS.COMPLETED]: { bg: 'bg-accent-50', text: 'text-accent-700', dot: 'bg-accent-500' },
   [TASK_STATUS.OVERDUE]: { bg: 'bg-danger-50', text: 'text-danger-700', dot: 'bg-danger-500' },
+  [TASK_STATUS.PAUSED]: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
 };
 
 export const TASK_PRIORITY = {
   LOW: 0,
   MEDIUM: 1,
   HIGH: 2,
+  CRITICAL: 3,
 };
 
 export const TASK_PRIORITY_LABELS = {
   [TASK_PRIORITY.LOW]: 'Low',
   [TASK_PRIORITY.MEDIUM]: 'Medium',
   [TASK_PRIORITY.HIGH]: 'High',
+  [TASK_PRIORITY.CRITICAL]: 'Critical',
 };
 
 export const TASK_PRIORITY_COLORS = {
   [TASK_PRIORITY.LOW]: { bg: 'bg-slate-100', text: 'text-slate-600' },
   [TASK_PRIORITY.MEDIUM]: { bg: 'bg-warning-100', text: 'text-warning-700' },
   [TASK_PRIORITY.HIGH]: { bg: 'bg-danger-100', text: 'text-danger-700' },
+  [TASK_PRIORITY.CRITICAL]: { bg: 'bg-red-200', text: 'text-red-900' },
 };
 
 export const NOTIFICATION_TYPES = {

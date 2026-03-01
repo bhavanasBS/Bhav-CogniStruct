@@ -130,6 +130,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseErrorHandling();
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot")),
+    RequestPath = ""
+}); // Serve avatar uploads from wwwroot/
+
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

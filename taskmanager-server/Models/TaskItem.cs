@@ -39,6 +39,22 @@ public class TaskItem
     public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedDate { get; set; }
 
+    /// <summary>Set when task is paused (Status=4). Cleared on resume.</summary>
+    public DateTime? PausedAt { get; set; }
+
+    [MaxLength(500)]
+    public string? PauseReason { get; set; }
+
+    /// <summary>Comma-separated required skills (e.g. "React,SQL,API")</summary>
+    [MaxLength(500)]
+    public string? RequiredSkills { get; set; }
+
+    // ── Hierarchy ──
+    /// <summary>Null = parent/project task. Set = subtask under a project.</summary>
+    public int? ParentTaskId { get; set; }
+    public TaskItem? ParentTask { get; set; }
+    public ICollection<TaskItem> SubTasks { get; set; } = new List<TaskItem>();
+
     // Navigation
     public ICollection<WorkLog> WorkLogs { get; set; } = new List<WorkLog>();
 }

@@ -21,6 +21,63 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    [MaxLength(500)]
+    public string? ProfileImageUrl { get; set; }
+
+    // Personal profile fields
+    [MaxLength(100)]
+    public string? MiddleName { get; set; }
+
+    [MaxLength(200)]
+    public string? DisplayName { get; set; }
+
+    [MaxLength(20)]
+    public string? Gender { get; set; }
+
+    public DateTime? DateOfBirth { get; set; }
+
+    [MaxLength(100)]
+    public string? Nationality { get; set; }
+
+    [MaxLength(200)]
+    public string? PersonalEmail { get; set; }
+
+    [MaxLength(20)]
+    public string? MobileNumber { get; set; }
+
+    [MaxLength(20)]
+    public string? WorkNumber { get; set; }
+
+    // About fields
+    [MaxLength(2000)]
+    public string? Bio { get; set; }
+
+    [MaxLength(1000)]
+    public string? JobLove { get; set; }
+
+    [MaxLength(1000)]
+    public string? Interests { get; set; }
+
+    // Job/Employment fields
+    [MaxLength(200)]
+    public string? JobTitle { get; set; }
+
+    [MaxLength(50)]
+    public string? WorkerType { get; set; }
+
+    [MaxLength(50)]
+    public string? TimeType { get; set; }
+
+    [MaxLength(100)]
+    public string? NoticePeriod { get; set; }
+
+    [MaxLength(200)]
+    public string? InProbation { get; set; }
+
+    // Skills (comma-separated)
+    [MaxLength(2000)]
+    public string? Skills { get; set; }
+
     // Reporting Manager (org hierarchy)
     public int? ManagerId { get; set; }
     public User? Manager { get; set; }

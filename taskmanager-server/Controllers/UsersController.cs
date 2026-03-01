@@ -262,4 +262,329 @@ public class UsersController : ControllerBase
 
         return Ok(result);
     }
+
+    // Any authenticated user can view their own profile
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var currentUserId))
+                return Unauthorized(new { message = "Could not identify user from token." });
+
+            var user = await _db.Users
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                .Include(u => u.Manager)
+                .FirstOrDefaultAsync(u => u.UserId == currentUserId);
+
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            // Get user's role names
+            var roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList();
+
+            // ── Personal Task Statistics ──────────────────────
+            var tasks = await _db.Tasks
+                .Where(t => t.AssigneeId == currentUserId)
+                .ToListAsync();
+
+            var totalTasks = tasks.Count;
+            var completedTasks = tasks.Count(t => t.Status == 3);
+            var inProgressTasks = tasks.Count(t => t.Status == 2);
+            var pendingTasks = tasks.Count(t => t.Status == 0 || t.Status == 1);
+            var overdueTasks = tasks.Count(t =>
+                t.Deadline.HasValue && t.Deadline.Value < DateTime.UtcNow && t.Status != 3);
+
+            // ── Work Log Hours ────────────────────────────────
+            var totalHours = await _db.WorkLogs
+                .Where(w => w.UserId == currentUserId)
+                .SumAsync(w => (double?)w.TotalHours) ?? 0;
+
+            // ── Leadership Stats ──────────────────────────────
+            var directReports = await _db.Users.CountAsync(u => u.ManagerId == currentUserId && u.IsActive);
+            var managedTeamsCount = await _db.Teams.CountAsync(t => t.ManagerId == currentUserId && t.IsActive);
+
+            // ── Team Memberships ──────────────────────────────
+            var memberships = await _db.TeamMembers
+                .Include(tm => tm.Team)
+                .Where(tm => tm.UserId == currentUserId)
+                .ToListAsync();
+
+            var teams = memberships
+                .Select(tm => new ProfileTeamDto
+                {
+                    TeamId = tm.TeamId,
+                    TeamName = tm.Team?.TeamName ?? "Unknown",
+                    Role = tm.Team?.ManagerId == currentUserId ? "Manager" : "Member"
+                }).ToList();
+
+            // Add managed teams not in memberships
+            var managedTeams = await _db.Teams
+                .Where(t => t.ManagerId == currentUserId && t.IsActive)
+                .ToListAsync();
+
+            foreach (var mt in managedTeams)
+            {
+                if (!teams.Any(t => t.TeamId == mt.TeamId))
+                {
+                    teams.Add(new ProfileTeamDto
+                    {
+                        TeamId = mt.TeamId,
+                        TeamName = mt.TeamName,
+                        Role = "Manager"
+                    });
+                }
+            }
+
+            // Build base profile
+            var profile = new UserProfileDto
+            {
+                Id = user.UserId,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                IsActive = user.IsActive,
+                ProfileImageUrl = user.ProfileImageUrl,
+                CreatedDate = user.CreatedDate,
+                Roles = roles,
+                ManagerId = user.ManagerId,
+                ManagerName = user.Manager != null ? $"{user.Manager.FirstName} {user.Manager.LastName}" : null,
+                Teams = teams,
+                TotalTasks = totalTasks,
+                CompletedTasks = completedTasks,
+                InProgressTasks = inProgressTasks,
+                PendingTasks = pendingTasks,
+                OverdueTasks = overdueTasks,
+                TotalHoursLogged = totalHours,
+                DirectReportsCount = directReports,
+                ManagedTeamsCount = managedTeamsCount
+            };
+
+            // ── Role-Specific Data ────────────────────────────
+            bool isAdmin = roles.Contains("Admin");
+            bool isHR = roles.Contains("HR");
+            bool isManager = roles.Contains("Manager");
+            bool isTeamLead = roles.Contains("TeamLead") || roles.Contains("Team Lead");
+            bool isEmployee = !isAdmin && !isHR && !isManager && !isTeamLead;
+
+            // ─────────────────────────────────────────────────
+            // ADMIN → Full system-wide overview + team perf
+            // ─────────────────────────────────────────────────
+            if (isAdmin)
+            {
+                profile.AllUsersCount = await _db.Users.CountAsync();
+                profile.ActiveUsersCount = await _db.Users.CountAsync(u => u.IsActive);
+                profile.AllTeamsCount = await _db.Teams.CountAsync(t => t.IsActive);
+                profile.AllTasksCount = await _db.Tasks.CountAsync();
+                profile.InactiveUsersCount = await _db.Users.CountAsync(u => !u.IsActive);
+                profile.TotalCompletedTasksOrg = await _db.Tasks.CountAsync(t => t.Status == 3);
+
+                // Admin also gets team performance if they manage teams
+                var managedTeamIds = managedTeams.Select(t => t.TeamId).ToList();
+                if (managedTeamIds.Count > 0)
+                {
+                    await PopulateTeamPerformance(profile, managedTeamIds);
+                }
+            }
+
+            // ─────────────────────────────────────────────────
+            // HR → Org health & workforce analytics
+            // ─────────────────────────────────────────────────
+            if (isHR)
+            {
+                profile.AllUsersCount = await _db.Users.CountAsync();
+                profile.ActiveUsersCount = await _db.Users.CountAsync(u => u.IsActive);
+                profile.InactiveUsersCount = await _db.Users.CountAsync(u => !u.IsActive);
+                profile.AllTeamsCount = await _db.Teams.CountAsync(t => t.IsActive);
+                profile.AllTasksCount = await _db.Tasks.CountAsync();
+                profile.TotalCompletedTasksOrg = await _db.Tasks.CountAsync(t => t.Status == 3);
+
+                // New hires this month
+                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                profile.NewHiresThisMonth = await _db.Users.CountAsync(u => u.CreatedDate >= monthStart);
+
+                // Department count (distinct active teams)
+                profile.DepartmentCount = await _db.Teams.CountAsync(t => t.IsActive);
+            }
+
+            // ─────────────────────────────────────────────────
+            // MANAGER → Team performance & direct reports
+            // ─────────────────────────────────────────────────
+            if (isManager && !isAdmin)
+            {
+                var managedTeamIds = managedTeams.Select(t => t.TeamId).ToList();
+                if (managedTeamIds.Count > 0)
+                {
+                    await PopulateTeamPerformance(profile, managedTeamIds);
+                }
+                else
+                {
+                    profile.TeamMembersCount = 0;
+                    profile.TeamTasksCount = 0;
+                    profile.TeamCompletedTasks = 0;
+                    profile.TeamCompletionRate = 0;
+                    profile.TeamOverdueTasks = 0;
+                    profile.TeamHoursLogged = 0;
+                }
+            }
+
+            // ─────────────────────────────────────────────────
+            // TEAM LEAD → Team members & completion
+            // ─────────────────────────────────────────────────
+            if (isTeamLead && !isManager && !isAdmin)
+            {
+                var managedTeamIds = managedTeams.Select(t => t.TeamId).ToList();
+                // Also include teams where user is a member (TeamLead may not be "manager" of the team in DB)
+                var memberTeamIds = memberships.Select(m => m.TeamId).ToList();
+                var allTeamIds = managedTeamIds.Union(memberTeamIds).Distinct().ToList();
+
+                if (allTeamIds.Count > 0)
+                {
+                    await PopulateTeamPerformance(profile, allTeamIds);
+                }
+                else
+                {
+                    profile.TeamMembersCount = 0;
+                    profile.TeamTasksCount = 0;
+                    profile.TeamCompletedTasks = 0;
+                    profile.TeamCompletionRate = 0;
+                    profile.TeamOverdueTasks = 0;
+                    profile.TeamHoursLogged = 0;
+                }
+            }
+
+            // ─────────────────────────────────────────────────
+            // EMPLOYEE → Personal productivity metrics
+            // ─────────────────────────────────────────────────
+            if (isEmployee)
+            {
+                // Average hours per day (last 30 days)
+                var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+                var recentLogs = await _db.WorkLogs
+                    .Where(w => w.UserId == currentUserId && w.StartTime >= thirtyDaysAgo)
+                    .ToListAsync();
+
+                var daysWithLogs = recentLogs.Select(w => w.StartTime.Date).Distinct().Count();
+                profile.AvgHoursPerDay = daysWithLogs > 0
+                    ? Math.Round(recentLogs.Sum(w => (double)w.TotalHours) / daysWithLogs, 1)
+                    : 0;
+
+                // Tasks completed this week
+                var weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+                profile.TasksCompletedThisWeek = tasks.Count(t =>
+                    t.Status == 3 && t.CompletedDate.HasValue && t.CompletedDate.Value >= weekStart);
+
+                // Tasks due this week
+                var weekEnd = weekStart.AddDays(7);
+                profile.TasksDueThisWeek = tasks.Count(t =>
+                    t.Deadline.HasValue && t.Deadline.Value >= weekStart && t.Deadline.Value < weekEnd && t.Status != 3);
+            }
+
+            return Ok(profile);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to load profile.", detail = ex.Message });
+        }
+    }
+
+    // ── Helper: Populate team performance stats ──────
+    private async Task PopulateTeamPerformance(UserProfileDto profile, List<int> teamIds)
+    {
+        var memberCount = await _db.TeamMembers
+            .Where(tm => teamIds.Contains(tm.TeamId))
+            .Select(tm => tm.UserId)
+            .Distinct()
+            .CountAsync();
+
+        var teamTasks = await _db.Tasks
+            .Where(t => t.TeamId.HasValue && teamIds.Contains(t.TeamId.Value))
+            .ToListAsync();
+
+        var teamTasksCount = teamTasks.Count;
+        var teamCompleted = teamTasks.Count(t => t.Status == 3);
+        var teamOverdue = teamTasks.Count(t =>
+            t.Deadline.HasValue && t.Deadline.Value < DateTime.UtcNow && t.Status != 3);
+
+        // Team hours logged
+        var memberIds = await _db.TeamMembers
+            .Where(tm => teamIds.Contains(tm.TeamId))
+            .Select(tm => tm.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        var teamHours = await _db.WorkLogs
+            .Where(w => memberIds.Contains(w.UserId))
+            .SumAsync(w => (double?)w.TotalHours) ?? 0;
+
+        profile.TeamMembersCount = memberCount;
+        profile.TeamTasksCount = teamTasksCount;
+        profile.TeamCompletedTasks = teamCompleted;
+        profile.TeamCompletionRate = teamTasksCount > 0
+            ? Math.Round((double)teamCompleted / teamTasksCount * 100, 1)
+            : 0;
+        profile.TeamOverdueTasks = teamOverdue;
+        profile.TeamHoursLogged = Math.Round(teamHours, 1);
+    }
+
+    // Upload profile avatar
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(5 * 1024 * 1024)] // 5 MB max
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var currentUserId))
+                return Unauthorized(new { message = "Could not identify user from token." });
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file provided." });
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                return BadRequest(new { message = "Only jpg, png, gif, webp images are allowed." });
+
+            // Ensure upload directory exists
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+            Directory.CreateDirectory(uploadsDir);
+
+            // Generate unique filename
+            var fileName = $"{currentUserId}_{Guid.NewGuid():N}{ext}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+
+            // Save file
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Update user record
+            var user = await _db.Users.FindAsync(currentUserId);
+            if (user == null) return NotFound();
+
+            // Delete old avatar file if exists
+            if (!string.IsNullOrEmpty(user.ProfileImageUrl))
+            {
+                var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",
+                    user.ProfileImageUrl.TrimStart('/'));
+                if (System.IO.File.Exists(oldPath))
+                    System.IO.File.Delete(oldPath);
+            }
+
+            user.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+            user.UpdatedDate = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { profileImageUrl = user.ProfileImageUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to upload avatar.", detail = ex.Message });
+        }
+    }
 }
+

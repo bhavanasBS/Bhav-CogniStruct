@@ -46,7 +46,26 @@ public class UpdateSettingsRequest
 public class UpdateProfileRequest
 {
     public string? FirstName { get; set; }
+    public string? MiddleName { get; set; }
     public string? LastName { get; set; }
+    public string? DisplayName { get; set; }
     public string? Email { get; set; }
+    public string? Gender { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Nationality { get; set; }
+    public string? PersonalEmail { get; set; }
+    public string? MobileNumber { get; set; }
+    public string? WorkNumber { get; set; }
     public string? TimeZone { get; set; }
+    // About fields
+    public string? Bio { get; set; }
+    public string? JobLove { get; set; }
+    public string? Interests { get; set; }
+    // Job fields
+    public string? JobTitle { get; set; }
+    public string? WorkerType { get; set; }
+    public string? TimeType { get; set; }
+    public string? NoticePeriod { get; set; }
+    public string? InProbation { get; set; }
+    public string? Skills { get; set; }
 }

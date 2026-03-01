@@ -5,7 +5,7 @@ import CustomSelect from '../common/CustomSelect';
 import { TASK_PRIORITY_LABELS } from '../../utils/constants';
 import { User, Users2, Flag } from 'lucide-react';
 
-const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], teams = [], isLoading }) => {
+const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], teams = [], isLoading, onTeamChange }) => {
   const isEdit = !!task;
   const [form, setForm] = useState({
     title: task?.title || '',
@@ -26,6 +26,11 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
   const handleSelectChange = (field, value) => {
     setForm((p) => ({ ...p, [field]: value }));
     setErrors((p) => ({ ...p, [field]: '' }));
+    // When team changes, reset assignee and load team members
+    if (field === 'teamId' && onTeamChange) {
+      setForm((p) => ({ ...p, assignedTo: '' }));
+      onTeamChange(value);
+    }
   };
 
   const validate = () => {

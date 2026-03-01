@@ -60,6 +60,7 @@ const MyTasksPage = () => {
             case 0: return 'bg-slate-100 text-slate-600 border-slate-200';
             case 1: return 'bg-blue-100 text-blue-700 border-blue-200';
             case 2: case 3: return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 4: return 'bg-amber-100 text-amber-700 border-amber-200';
             default: return 'bg-slate-100 text-slate-600 border-slate-200';
         }
     };
@@ -69,12 +70,14 @@ const MyTasksPage = () => {
             case 0: return 'Pending';
             case 1: return 'In Progress';
             case 2: case 3: return 'Completed';
+            case 4: return 'Paused';
             default: return 'Unknown';
         }
     };
 
     const getPriorityColor = (priority) => {
         switch (priority) {
+            case 3: return 'bg-red-600';
             case 2: return 'bg-rose-500';
             case 1: return 'bg-amber-500';
             default: return 'bg-emerald-500';
@@ -83,6 +86,7 @@ const MyTasksPage = () => {
 
     const getPriorityLabel = (priority) => {
         switch (priority) {
+            case 3: return 'Critical';
             case 2: return 'High';
             case 1: return 'Medium';
             default: return 'Low';
@@ -241,7 +245,7 @@ const MyTasksPage = () => {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <Badge variant={task.priority === 2 ? 'danger' : task.priority === 1 ? 'warning' : 'success'} size="sm">
+                                    <Badge variant={task.priority >= 2 ? 'danger' : task.priority === 1 ? 'warning' : 'success'} size="sm">
                                         {getPriorityLabel(task.priority)}
                                     </Badge>
                                     <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getStatusColor(task.status)}`}>

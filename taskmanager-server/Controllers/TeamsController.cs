@@ -29,7 +29,7 @@ public class TeamsController : ControllerBase
             .Include(t => t.Members)
             .AsQueryable();
 
-        // If the current user is a Manager (not Admin/HR), only show their teams
+        // Role-based filtering
         var isAdmin = User.IsInRole("Admin") || User.IsInRole("HR");
         if (!isAdmin)
         {
@@ -37,7 +37,16 @@ public class TeamsController : ControllerBase
                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out var currentUserId))
             {
-                query = query.Where(t => t.ManagerId == currentUserId);
+                if (User.IsInRole("Manager"))
+                {
+                    // Manager sees teams they manage
+                    query = query.Where(t => t.ManagerId == currentUserId);
+                }
+                else
+                {
+                    // TeamLead sees teams where they are a member
+                    query = query.Where(t => t.Members.Any(m => m.UserId == currentUserId));
+                }
             }
         }
 
@@ -185,6 +194,20 @@ public class TeamsController : ControllerBase
     [HttpGet("{teamId}/members")]
     public async Task<IActionResult> GetMembers(int teamId)
     {
+        // Validate Manager ownership
+        if (User.IsInRole("Manager") && !User.IsInRole("Admin"))
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+            {
+                var team = await _db.Teams.FindAsync(teamId);
+                if (team == null) return NotFound();
+                if (team.ManagerId != currentUserId)
+                    return StatusCode(403, new { message = "You can only view members of teams you manage." });
+            }
+        }
+
         var members = await _db.Set<TeamMember>()
             .Where(m => m.TeamId == teamId)
             .Include(m => m.User)
@@ -234,6 +257,15 @@ public class TeamsController : ControllerBase
             .FirstOrDefaultAsync(m => m.TeamId == teamId && m.UserId == userId);
 
         if (member == null) return NotFound();
+
+        // Guard: cannot remove member with active subtasks
+        var activeSubtasks = await _db.Tasks
+            .AnyAsync(t => t.AssigneeId == userId
+                        && t.TeamId == teamId
+                        && t.ParentTaskId != null
+                        && t.Status != 3); // Not completed
+        if (activeSubtasks)
+            return BadRequest(new { message = "Cannot remove member with active tasks." });
 
         _db.Set<TeamMember>().Remove(member);
         await _db.SaveChangesAsync();

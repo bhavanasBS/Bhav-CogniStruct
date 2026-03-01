@@ -10,7 +10,6 @@ import Pagination from '../../components/common/Pagination';
 import { useNavigate } from 'react-router-dom';
 import { taskApi } from '../../api/taskApi';
 import { teamApi } from '../../api/teamApi';
-import { userApi } from '../../api/userApi';
 import toast from 'react-hot-toast';
 
 const TasksPage = () => {
@@ -27,6 +26,11 @@ const TasksPage = () => {
   // Real employees and teams for task form
   const [employees, setEmployees] = useState([]);
   const [teams, setTeams] = useState([]);
+
+  // Get current user role
+  const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+  const userRole = (user.role || user.roles?.[0] || '').toLowerCase();
+  const canCreate = ['admin', 'manager'].includes(userRole);
 
   const fetchTasks = async () => {
     try {
@@ -52,43 +56,29 @@ const TasksPage = () => {
     }
   };
 
-  const fetchEmployeesAndTeams = async () => {
-    try {
-      const empRes = await userApi.getMyEmployees();
-      setEmployees((empRes.data || []).map(u => ({
-        userId: u.id || u.userId,
-        firstName: u.firstName,
-        lastName: u.lastName,
-      })));
-    } catch {
-      try {
-        const teamRes = await teamApi.getMyTeam();
-        const myTeams = teamRes.data || [];
-        if (myTeams.length > 0) {
-          const tid = myTeams[0].id || myTeams[0].teamId;
-          const membersRes = await teamApi.getMembers(tid);
-          setEmployees((membersRes.data || []).map(m => ({
-            userId: m.userId,
-            firstName: m.name?.split(' ')[0] || '',
-            lastName: m.name?.split(' ').slice(1).join(' ') || '',
-          })));
-        }
-      } catch { /* no employees */ }
-    }
+  const fetchTeams = async () => {
     try {
       const teamRes = await teamApi.getAll();
       setTeams((teamRes.data.items || teamRes.data || []).map(t => ({
         teamId: t.id || t.teamId,
         teamName: t.teamName,
       })));
+    } catch { /* no teams */ }
+  };
+
+  // Load employees dynamically when team changes
+  const handleTeamChange = async (teamId) => {
+    setEmployees([]);
+    if (!teamId) return;
+    try {
+      const membersRes = await teamApi.getMembers(teamId);
+      setEmployees((membersRes.data || []).map(m => ({
+        userId: m.userId,
+        firstName: m.name?.split(' ')[0] || '',
+        lastName: m.name?.split(' ').slice(1).join(' ') || '',
+      })));
     } catch {
-      try {
-        const teamRes = await teamApi.getMyTeam();
-        setTeams((teamRes.data || []).map(t => ({
-          teamId: t.id || t.teamId,
-          teamName: t.teamName,
-        })));
-      } catch { /* no teams */ }
+      setEmployees([]);
     }
   };
 
@@ -97,7 +87,7 @@ const TasksPage = () => {
   }, [page, search, filters]);
 
   useEffect(() => {
-    fetchEmployeesAndTeams();
+    if (canCreate) fetchTeams();
   }, []);
 
   const handleCreateTask = async (data) => {
@@ -149,13 +139,15 @@ const TasksPage = () => {
               <p className="text-white/80 text-sm mt-0.5">Manage, track, and organize all your task assignments</p>
             </div>
           </div>
-          <Button
-            icon={Plus}
-            onClick={() => setShowForm(true)}
-            className="!bg-white !text-indigo-600 hover:!bg-white/90"
-          >
-            New Task
-          </Button>
+          {canCreate && (
+            <Button
+              icon={Plus}
+              onClick={() => setShowForm(true)}
+              className="!bg-white !text-indigo-600 hover:!bg-white/90"
+            >
+              New Task
+            </Button>
+          )}
         </div>
       </div>
 
@@ -262,15 +254,19 @@ const TasksPage = () => {
 
       <Pagination currentPage={page} totalPages={Math.ceil(totalCount / 10)} totalCount={totalCount} pageSize={10} onPageChange={setPage} />
 
-      <TaskForm
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        onSubmit={handleCreateTask}
-        employees={employees}
-        teams={teams}
-      />
+      {canCreate && (
+        <TaskForm
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreateTask}
+          employees={employees}
+          teams={teams}
+          onTeamChange={handleTeamChange}
+        />
+      )}
     </div>
   );
 };
 
 export default TasksPage;
+

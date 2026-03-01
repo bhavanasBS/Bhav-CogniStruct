@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<DailyUpdateStatus> DailyUpdateStatuses => Set<DailyUpdateStatus>();
+    public DbSet<TaskAuditLog> TaskAuditLogs => Set<TaskAuditLog>();
+    public DbSet<PauseRequest> PauseRequests => Set<PauseRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,6 +82,44 @@ public class AppDbContext : DbContext
             .HasOne(t => t.Team)
             .WithMany(tm => tm.Tasks)
             .HasForeignKey(t => t.TeamId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ── TaskItem self-referencing hierarchy ──
+        modelBuilder.Entity<TaskItem>()
+            .HasOne(t => t.ParentTask)
+            .WithMany(t => t.SubTasks)
+            .HasForeignKey(t => t.ParentTaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => t.ParentTaskId);
+
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => t.AssigneeId);
+
+        // ─── PauseRequest ──────────────────────────
+        modelBuilder.Entity<PauseRequest>()
+            .HasOne(p => p.Task)
+            .WithMany()
+            .HasForeignKey(p => p.TaskId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<PauseRequest>()
+            .HasOne(p => p.Employee)
+            .WithMany()
+            .HasForeignKey(p => p.EmployeeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<PauseRequest>()
+            .HasOne(p => p.RequestedBy)
+            .WithMany()
+            .HasForeignKey(p => p.RequestedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<PauseRequest>()
+            .HasOne(p => p.ApprovedBy)
+            .WithMany()
+            .HasForeignKey(p => p.ApprovedByUserId)
             .OnDelete(DeleteBehavior.NoAction);
 
         // ─── WorkLog ──────────────────────────────
@@ -147,5 +187,21 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<DailyUpdateStatus>()
             .HasIndex(d => new { d.UserId, d.UpdateDate })
             .IsUnique();
+
+        // ─── TaskAuditLog ─────────────────────────────
+        modelBuilder.Entity<TaskAuditLog>()
+            .HasOne(a => a.Task)
+            .WithMany()
+            .HasForeignKey(a => a.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskAuditLog>()
+            .HasOne(a => a.PerformedBy)
+            .WithMany()
+            .HasForeignKey(a => a.PerformedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<TaskAuditLog>()
+            .HasIndex(a => a.TaskId);
     }
 }

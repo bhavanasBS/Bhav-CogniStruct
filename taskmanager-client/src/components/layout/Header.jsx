@@ -6,6 +6,11 @@ import { useNotificationContext } from '../../context/NotificationContext';
 import { getInitials, generateAvatarColor } from '../../utils/helpers';
 import { getPrimaryRole, getRoleBadgeColor } from '../../utils/roleUtils';
 
+const getProfileRoute = (role) => {
+  const map = { Admin: '/admin/profile', Manager: '/manager/profile', TeamLead: '/teamlead/profile', 'Team Lead': '/teamlead/profile', HR: '/hr/profile', Employee: '/employee/profile' };
+  return map[role] || '/employee/profile';
+};
+
 const Header = ({ onToggleSidebar }) => {
   const authCtx = useAuthContext();
   const user = authCtx?.user || { firstName: 'User', lastName: '', roles: [], email: '' };
@@ -134,7 +139,7 @@ const Header = ({ onToggleSidebar }) => {
               <div className="py-1">
                 <button
                   onClick={() => {
-                    navigate('/profile');
+                    navigate(getProfileRoute(getPrimaryRole(user)));
                     setShowProfile(false);
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
