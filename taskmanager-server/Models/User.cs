@@ -96,6 +96,5 @@ public class User
     public ICollection<WorkLog> WorkLogs { get; set; } = new List<WorkLog>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Team> ManagedTeams { get; set; } = new List<Team>();
-    public ICollection<DailyUpdateStatus> DailyUpdates { get; set; } = new List<DailyUpdateStatus>();
     public ICollection<User> Subordinates { get; set; } = new List<User>();
 }

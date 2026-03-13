@@ -49,33 +49,6 @@ public class ProfileController : ControllerBase
     }
 
     // ═══════════════════════════════════════════════════
-    // GET /api/hr/profile
-    // ═══════════════════════════════════════════════════
-    [HttpGet("api/hr/profile")]
-    [Authorize(Roles = "Admin,HR")]
-    public async Task<IActionResult> GetHRProfile()
-    {
-        var (user, roles) = await GetUserWithRoles();
-        if (user == null) return Unauthorized(new { message = "Could not identify user." });
-
-        var profile = await BuildBaseProfile(user, roles);
-
-        // HR-specific: Org health & workforce analytics
-        profile.AllUsersCount = await _db.Users.CountAsync();
-        profile.ActiveUsersCount = await _db.Users.CountAsync(u => u.IsActive);
-        profile.InactiveUsersCount = await _db.Users.CountAsync(u => !u.IsActive);
-        profile.AllTeamsCount = await _db.Teams.CountAsync(t => t.IsActive);
-        profile.AllTasksCount = await _db.Tasks.CountAsync();
-        profile.TotalCompletedTasksOrg = await _db.Tasks.CountAsync(t => t.Status == 3);
-
-        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-        profile.NewHiresThisMonth = await _db.Users.CountAsync(u => u.CreatedDate >= monthStart);
-        profile.DepartmentCount = await _db.Teams.CountAsync(t => t.IsActive);
-
-        return Ok(profile);
-    }
-
-    // ═══════════════════════════════════════════════════
     // GET /api/manager/profile
     // ═══════════════════════════════════════════════════
     [HttpGet("api/manager/profile")]

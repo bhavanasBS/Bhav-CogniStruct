@@ -2,6 +2,7 @@ import api from './axiosInstance';
 
 export const workLogApi = {
   create: (data) => api.post('/api/worklogs', data),
+  getAll: (params) => api.get('/api/worklogs', { params }),
   getByTask: (taskId) => api.get(`/api/worklogs/task/${taskId}`),
   getByEmployee: (userId, params) => api.get(`/api/worklogs/employee/${userId}`, { params }),
   getByTeam: (managerId) => api.get(`/api/worklogs/team/${managerId}`),

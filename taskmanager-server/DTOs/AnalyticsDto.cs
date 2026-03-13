@@ -75,6 +75,12 @@ public class WorkloadMemberDto
     public double MaxHours { get; set; }
     public int Workload { get; set; }
 
+    // Task-based workload fields
+    public double EstimatedWorkloadHours { get; set; }
+    public double LoggedHours { get; set; }
+    public double WeeklyCapacity { get; set; } = 40.0;
+    public double RemainingHours { get; set; }
+
     // Effort-based breakdown
     public double EffortScore { get; set; }
     public double WeeklyScore { get; set; }
@@ -123,8 +129,13 @@ public class AssignmentSuggestionDto
     public double AvailabilityScore { get; set; }
     public double PerformanceScore { get; set; }
     public double ConsistencyScore { get; set; }
+    public double FeedbackScore { get; set; }
+    public double ManagerScore { get; set; }
     public double AssignmentScore { get; set; }
     public int Workload { get; set; }
+    public double EstimatedWorkloadHours { get; set; }
+    public double WeeklyCapacity { get; set; } = 40.0;
+    public string? Warning { get; set; }
     public string Reason { get; set; } = string.Empty;
 }
 
@@ -213,3 +224,17 @@ public class ActivityFeedItem
     public string Time { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
 }
+
+// ─── Employee Productivity DTOs ────────────────────
+
+public class EmployeeProductivityDto
+{
+    public int EmployeeId { get; set; }
+    public string EmployeeName { get; set; } = string.Empty;
+    public int CompletedTasks { get; set; }
+    public double AverageCompletionTime { get; set; } // in hours
+    public double OverdueRate { get; set; }            // 0.0 - 100.0
+    public double ProductivityScore { get; set; }      // 0.0 - 100.0
+    public double ConsistencyScore { get; set; }       // 0.0 - 100.0
+}
+

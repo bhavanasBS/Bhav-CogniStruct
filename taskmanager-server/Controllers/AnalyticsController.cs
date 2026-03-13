@@ -8,7 +8,7 @@ namespace TaskManager.API.Controllers;
 
 [ApiController]
 [Route("api/analytics")]
-[Authorize(Roles = "Admin,Manager,HR")]  // Admin, Manager, HR can view analytics
+[Authorize(Roles = "Admin,Manager")]  // Admin, Manager can view analytics
 public class AnalyticsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -21,7 +21,7 @@ public class AnalyticsController : ControllerBase
     [HttpGet("completion-rate")]
     public async Task<IActionResult> GetCompletionRate()
     {
-        var tasks = await _db.Tasks.ToListAsync();
+        var tasks = await _db.Tasks.Where(t => t.Status != 6).ToListAsync(); // exclude Cancelled
         var total = tasks.Count;
         var completed = tasks.Count(t => t.Status == 3);
         var rate = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0;
@@ -302,5 +302,245 @@ public class AnalyticsController : ControllerBase
             OverdueScore = Math.Round(overdueScore, 1),
             CompletedTasksCount = count
         };
+    }
+
+    // ═══════════════════════════════════════════════════
+    // GET /api/analytics/employee-productivity
+    // ═══════════════════════════════════════════════════
+    [HttpGet("employee-productivity")]
+    public async Task<IActionResult> GetEmployeeProductivity()
+    {
+        var users = await _db.Users
+            .Include(u => u.AssignedTasks).ThenInclude(t => t.WorkLogs)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive)
+            .ToListAsync();
+
+        var results = new List<EmployeeProductivityDto>();
+
+        foreach (var u in users)
+        {
+            // Exclude cancelled tasks
+            var tasks = u.AssignedTasks.Where(t => t.Status != 6 && t.ParentTaskId != null).ToList();
+            if (!tasks.Any()) continue;
+
+            var assignedCount = tasks.Count;
+            var completedTasks = tasks.Where(t => t.Status == 3).ToList();
+            var completedCount = completedTasks.Count;
+
+            // Productivity Score
+            var productivityScore = assignedCount > 0
+                ? Math.Round((double)completedCount / assignedCount * 100, 1) : 0;
+
+            // Average Completion Time (hours)
+            var avgTime = 0.0;
+            if (completedTasks.Any())
+            {
+                var durations = completedTasks
+                    .Where(t => t.CompletedDate.HasValue && t.StartedAt.HasValue)
+                    .Select(t => (t.CompletedDate!.Value - t.StartedAt!.Value).TotalHours)
+                    .ToList();
+                avgTime = durations.Any() ? Math.Round(durations.Average(), 1) : 0;
+            }
+
+            // Overdue Rate
+            var tasksWithDeadline = tasks.Where(t => t.Deadline.HasValue).ToList();
+            var overdueCount = tasksWithDeadline.Count(t =>
+                (t.CompletedDate.HasValue && t.CompletedDate > t.Deadline)
+                || (!t.CompletedDate.HasValue && t.Status != 3 && DateTime.UtcNow > t.Deadline));
+            var overdueRate = tasksWithDeadline.Any()
+                ? Math.Round((double)overdueCount / tasksWithDeadline.Count * 100, 1) : 0;
+
+            // Consistency Score
+            var consistency = ComputeConsistency(u.UserId, completedTasks);
+
+            results.Add(new EmployeeProductivityDto
+            {
+                EmployeeId = u.UserId,
+                EmployeeName = $"{u.FirstName} {u.LastName}",
+                CompletedTasks = completedCount,
+                AverageCompletionTime = avgTime,
+                OverdueRate = overdueRate,
+                ProductivityScore = productivityScore,
+                ConsistencyScore = consistency
+            });
+        }
+
+        return Ok(results.OrderByDescending(r => r.ProductivityScore));
+    }
+
+    private double ComputeConsistency(int userId, List<TaskManager.API.Models.TaskItem> completedTasks)
+    {
+        if (completedTasks.Count < 3) return 70; // neutral default
+
+        var tasksWithDeadline = completedTasks.Where(t => t.Deadline.HasValue).ToList();
+
+        // Variance
+        var variances = completedTasks
+            .Where(t => t.EstimatedHours > 0 && t.WorkLogs != null)
+            .Select(t =>
+            {
+                var actual = t.WorkLogs!.Sum(w => w.TotalHours);
+                if (actual == 0) actual = t.EstimatedHours;
+                return Math.Abs(actual - t.EstimatedHours) / t.EstimatedHours;
+            }).ToList();
+        var varianceScore = variances.Any()
+            ? Math.Max(0, (1.0 - variances.Average()) * 40.0) : 30;
+
+        // Adherence
+        double adherenceScore;
+        if (tasksWithDeadline.Any())
+        {
+            var onTime = tasksWithDeadline.Count(t => t.CompletedDate!.Value <= t.Deadline!.Value);
+            adherenceScore = (double)onTime / tasksWithDeadline.Count * 40.0;
+        }
+        else adherenceScore = 30;
+
+        // Overdue
+        double overdueScore;
+        if (tasksWithDeadline.Any())
+        {
+            var overdue = tasksWithDeadline.Count(t => t.CompletedDate!.Value > t.Deadline!.Value);
+            overdueScore = (1.0 - (double)overdue / tasksWithDeadline.Count) * 20.0;
+        }
+        else overdueScore = 15;
+
+        return Math.Clamp(Math.Round(varianceScore + adherenceScore + overdueScore, 1), 0, 100);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // GET /api/analytics/team-performance/{teamId}
+    // Manager dashboard — per-employee performance analytics
+    // ═══════════════════════════════════════════════════
+
+    [HttpGet("team-performance/{teamId}")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> GetTeamPerformance(int teamId)
+    {
+        var members = await _db.Set<TaskManager.API.Models.TeamMember>()
+            .Where(m => m.TeamId == teamId)
+            .Include(m => m.User).ThenInclude(u => u.AssignedTasks)
+            .Include(m => m.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .ToListAsync();
+
+        // Filter to only Employees (exclude Manager, TeamLead, Admin)
+        members = members
+            .Where(m => m.User.UserRoles.Any(ur =>
+                ur.Role.RoleName.Equals("Employee", StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        var result = new List<object>();
+
+        foreach (var m in members)
+        {
+            var user = m.User;
+            var tasks = user.AssignedTasks.Where(t => t.Status != 6).ToList(); // exclude cancelled
+            var completed = tasks.Where(t => t.Status == 3).ToList();
+
+            // Average feedback rating
+            var feedbacks = await _db.TaskFeedbacks
+                .Where(f => f.EmployeeId == user.UserId)
+                .Select(f => f.OverallRating)
+                .ToListAsync();
+            var avgFeedback = feedbacks.Any() ? Math.Round(feedbacks.Average(), 1) : 0;
+
+            // Manager review score (latest)
+            var latestReview = await _db.EmployeeReviews
+                .Where(r => r.EmployeeId == user.UserId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => (int?)r.PerformanceScore)
+                .FirstOrDefaultAsync();
+
+            // Productivity
+            var productivity = tasks.Any()
+                ? Math.Round((double)completed.Count / tasks.Count * 100, 1) : 0;
+
+            // Avg completion time (hours)
+            double avgCompletionTime = 0;
+            var withStart = completed.Where(t => t.StartedAt.HasValue && t.CompletedDate.HasValue).ToList();
+            if (withStart.Any())
+                avgCompletionTime = Math.Round(withStart.Average(t => (t.CompletedDate!.Value - t.StartedAt!.Value).TotalHours), 1);
+
+            // Overdue rate
+            var withDeadline = completed.Where(t => t.Deadline.HasValue).ToList();
+            double overdueRate = 0;
+            if (withDeadline.Any())
+            {
+                var overdue = withDeadline.Count(t => t.CompletedDate!.Value > t.Deadline!.Value);
+                overdueRate = Math.Round((double)overdue / withDeadline.Count * 100, 1);
+            }
+
+            result.Add(new
+            {
+                employeeId = user.UserId,
+                employeeName = user.FirstName + " " + user.LastName,
+                averageFeedbackRating = avgFeedback,
+                managerReviewScore = latestReview ?? 0,
+                productivityScore = productivity,
+                averageCompletionTime = avgCompletionTime,
+                overdueRate
+            });
+        }
+
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // GET /api/analytics/top-performers
+    // Top 5 employees this week by tasks completed + efficiency
+    // ═══════════════════════════════════════════════════
+
+    [HttpGet("top-performers")]
+    public async Task<IActionResult> GetTopPerformers()
+    {
+        var weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+        var weekEnd = weekStart.AddDays(7);
+
+        // Get all completed tasks this week with their assignees
+        var completedThisWeek = await _db.Tasks
+            .Where(t => t.Status == 3
+                && t.CompletedDate != null
+                && t.CompletedDate >= weekStart
+                && t.CompletedDate < weekEnd
+                && t.AssigneeId != null)
+            .Include(t => t.Assignee)
+            .ToListAsync();
+
+        // Get work logs this week
+        var workLogs = await _db.WorkLogs
+            .Where(w => w.StartTime >= weekStart && w.StartTime < weekEnd)
+            .ToListAsync();
+
+        // Group by assignee
+        var grouped = completedThisWeek
+            .GroupBy(t => t.AssigneeId!.Value)
+            .Select(g =>
+            {
+                var emp = g.First().Assignee!;
+                var tasks = g.ToList();
+                var tasksCompleted = tasks.Count;
+                var totalEstimated = tasks.Sum(t => t.EstimatedHours);
+                var hoursLogged = Math.Round(workLogs
+                    .Where(w => w.UserId == g.Key)
+                    .Sum(w => w.TotalHours), 1);
+                var actualHours = hoursLogged > 0 ? hoursLogged : 1;
+                var efficiency = totalEstimated > 0
+                    ? Math.Round((totalEstimated / actualHours) * 100, 0)
+                    : 0;
+
+                return new
+                {
+                    employeeName = $"{emp.FirstName} {emp.LastName}",
+                    tasksCompleted,
+                    hoursLogged,
+                    efficiency = Math.Min(efficiency, 100) // cap at 100
+                };
+            })
+            .OrderByDescending(x => x.tasksCompleted)
+            .ThenByDescending(x => x.efficiency)
+            .Take(5)
+            .ToList();
+
+        return Ok(grouped);
     }
 }

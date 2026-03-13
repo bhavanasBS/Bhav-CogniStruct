@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Users, Sparkles, Crown, Briefcase, UserCheck, Users2, HeartHandshake, Edit2, Settings } from 'lucide-react';
+import { Shield, Users, Crown, Briefcase, UserCheck, Users2, Settings } from 'lucide-react';
 import Card from '../../components/common/Card';
 import { getRoleBadgeColor } from '../../utils/roleUtils';
 
@@ -8,7 +8,6 @@ const roleIcons = {
   Manager: Briefcase,
   Employee: UserCheck,
   TeamLead: Users2,
-  HR: HeartHandshake,
 };
 
 const roleGradients = {
@@ -16,7 +15,6 @@ const roleGradients = {
   Manager: 'from-blue-500 to-blue-600',
   Employee: 'from-emerald-500 to-emerald-600',
   TeamLead: 'from-amber-500 to-amber-600',
-  HR: 'from-rose-500 to-rose-600',
 };
 
 const roleBgColors = {
@@ -24,7 +22,6 @@ const roleBgColors = {
   Manager: 'bg-blue-50 border-blue-200',
   Employee: 'bg-emerald-50 border-emerald-200',
   TeamLead: 'bg-amber-50 border-amber-200',
-  HR: 'bg-rose-50 border-rose-200',
 };
 
 const RoleManagement = () => {
@@ -33,16 +30,14 @@ const RoleManagement = () => {
     { roleId: 2, roleName: 'Manager', userCount: 5, description: 'Team management, task assignment, view team analytics, approve time logs', permissions: ['Team View', 'Task Assignment', 'Approvals'] },
     { roleId: 3, roleName: 'Employee', userCount: 18, description: 'View assigned tasks, log work hours, update task status', permissions: ['View Tasks', 'Log Hours', 'Update Status'] },
     { roleId: 4, roleName: 'TeamLead', userCount: 4, description: 'Assign tasks within team, view team progress, limited reporting', permissions: ['Team Tasks', 'Progress View', 'Reports'] },
-    { roleId: 5, roleName: 'HR', userCount: 3, description: 'View employee records, performance reports, team structures', permissions: ['Employee Records', 'Performance', 'Teams'] },
   ]);
 
   const totalUsers = roles.reduce((acc, r) => acc + r.userCount, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header with Cognitive Styling */}
+      {/* Header */}
       <div className="bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 rounded-2xl p-6 text-white relative overflow-hidden">
-        {/* Background Effects */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
           <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
@@ -54,9 +49,8 @@ const RoleManagement = () => {
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
+              <h1 className="text-2xl font-bold">
                 Role Management
-                <Sparkles className="w-5 h-5 text-amber-300" />
               </h1>
               <p className="text-white/80 text-sm mt-0.5">Define and manage system roles and their permissions</p>
             </div>
@@ -124,24 +118,9 @@ const RoleManagement = () => {
           );
         })}
       </div>
-
-      {/* Info Section */}
-      <div className="bg-gradient-to-r from-purple-50 to-rose-50 rounded-xl p-5 border border-purple-100">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-rose-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-slate-800 mb-1">Role-Based Access Control</h4>
-            <p className="text-sm text-slate-600">
-              Each role defines specific permissions that control what users can access and modify.
-              Users can be assigned multiple roles for flexible access management.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
 export default RoleManagement;
+

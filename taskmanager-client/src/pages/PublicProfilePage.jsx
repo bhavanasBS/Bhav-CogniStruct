@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     User, Mail, Calendar, Shield, Users, Briefcase, ChevronRight, Loader2,
-    Building2, Clock, Globe, BookOpen, Heart, Sparkles, ArrowLeft, ChevronLeft, Phone
+    Building2, Clock, Globe, BookOpen, Heart, ArrowLeft, ChevronLeft, Phone
 } from 'lucide-react';
 import { userApi } from '../api/userApi';
 import { getRoleBadgeColor } from '../utils/roleUtils';
@@ -36,7 +36,7 @@ const DetailRow = ({ icon: Icon, label, value }) => (
 const roleGradients = {
     Admin: 'from-slate-800 to-slate-900',
     Manager: 'from-blue-600 to-indigo-700',
-    HR: 'from-teal-600 to-emerald-700',
+
     TeamLead: 'from-violet-600 to-purple-700',
     'Team Lead': 'from-violet-600 to-purple-700',
     Employee: 'from-indigo-600 to-purple-700',
@@ -98,7 +98,7 @@ const PublicProfilePage = () => {
     const defaultBio = (role) => {
         if (role === 'Admin') return 'System administrator managing platform operations and organizational oversight.';
         if (role === 'Manager') return 'Project manager overseeing team operations and driving productivity.';
-        if (role === 'HR') return 'HR professional responsible for employee management and workforce analytics.';
+
         if (role === 'TeamLead' || role === 'Team Lead') return 'Team lead guiding professionals towards project goals.';
         return 'Dedicated professional contributing to team objectives through consistent task execution.';
     };
@@ -177,7 +177,7 @@ const PublicProfilePage = () => {
                 {/* Interests */}
                 {profile.interests && (
                     <Card>
-                        <SectionHeader icon={Sparkles} title="Interests & Hobbies" gradient="from-amber-500 to-orange-600" />
+                        <SectionHeader title="Interests & Hobbies" gradient="from-amber-500 to-orange-600" />
                         <div className="px-6 py-5">
                             <p className="text-sm text-slate-600 leading-relaxed">{profile.interests}</p>
                         </div>
@@ -187,7 +187,7 @@ const PublicProfilePage = () => {
                 {/* Skills */}
                 {skills.length > 0 && (
                     <Card>
-                        <SectionHeader icon={Sparkles} title="Skills" gradient="from-violet-500 to-purple-600" />
+                        <SectionHeader title="Skills" gradient="from-violet-500 to-purple-600" />
                         <div className="px-6 py-5">
                             <div className="flex flex-wrap gap-2">
                                 {skills.map((skill) => (

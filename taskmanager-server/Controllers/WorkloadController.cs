@@ -9,7 +9,7 @@ namespace TaskManager.API.Controllers;
 
 [ApiController]
 [Route("api/workload")]
-[Authorize(Roles = "Admin,Manager,HR")]
+[Authorize(Roles = "Admin,Manager,TeamLead")]
 public class WorkloadController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -29,7 +29,7 @@ public class WorkloadController : ControllerBase
     {
         // Active tasks = subtasks only (exclude parent/project tasks, exclude completed)
         var activeTasks = user.AssignedTasks
-            .Where(t => t.Status != 3 && t.ParentTaskId != null).ToList();
+            .Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6 && t.ParentTaskId != null).ToList();
 
         // ── A. Effort Score (max 40%) ──────────────────
         var totalEstimatedEffort = activeTasks.Sum(t => t.EstimatedHours);
@@ -69,6 +69,14 @@ public class WorkloadController : ControllerBase
 
         var pausedCount = activeTasks.Count(t => t.Status == 4);
 
+        // Total logged hours for active tasks
+        var totalLoggedHours = user.WorkLogs
+            .Where(w => w.StartTime >= DateTime.UtcNow.AddDays(-7))
+            .Sum(w => w.TotalHours);
+
+        // Remaining = estimated - logged (but never negative)
+        var remaining = Math.Max(0, totalEstimatedEffort - totalLoggedHours);
+
         return new WorkloadMemberDto
         {
             Id = user.UserId,
@@ -80,7 +88,12 @@ public class WorkloadController : ControllerBase
             Hours = Math.Round(weeklyHours, 1),
             MaxHours = 40.0,
             Workload = workload,
-            // New breakdown
+            // New task-based workload fields
+            EstimatedWorkloadHours = Math.Round(totalEstimatedEffort, 1),
+            LoggedHours = Math.Round(totalLoggedHours, 1),
+            WeeklyCapacity = 40.0,
+            RemainingHours = Math.Round(remaining, 1),
+            // Breakdown
             EffortScore = Math.Round(effortScore, 1),
             WeeklyScore = Math.Round(weeklyScore, 1),
             PriorityScore = Math.Round(priorityScore, 1),
@@ -105,6 +118,29 @@ public class WorkloadController : ControllerBase
 
         var result = members
             .Select(m => ComputeWorkload(m.User))
+            .OrderByDescending(w => w.Workload)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // GET /api/workload/all — All employees across all teams
+    // ═══════════════════════════════════════════════════
+
+    [HttpGet("all")]
+    [Authorize(Roles = "Admin,Manager,TeamLead,Team Lead")]
+    public async Task<IActionResult> GetAll()
+    {
+        var users = await _db.Users
+            .Include(u => u.AssignedTasks)
+            .Include(u => u.WorkLogs)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive)
+            .ToListAsync();
+
+        var result = users
+            .Select(u => ComputeWorkload(u))
             .OrderByDescending(w => w.Workload)
             .ToList();
 
@@ -142,7 +178,7 @@ public class WorkloadController : ControllerBase
         [FromQuery] string? requiredSkills = null)
     {
         // Validate Manager ownership
-        if (User.IsInRole("Manager") && !User.IsInRole("Admin") && !User.IsInRole("HR"))
+        if (User.IsInRole("Manager") && !User.IsInRole("Admin"))
         {
             var userIdClaim = User.FindFirst("UserId")?.Value
                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -155,12 +191,14 @@ public class WorkloadController : ControllerBase
             }
         }
 
-        var members = await _db.Set<TeamMember>()
+        var members = (await _db.Set<TeamMember>()
             .Where(m => m.TeamId == teamId)
             .Include(m => m.User).ThenInclude(u => u.AssignedTasks).ThenInclude(t => t.WorkLogs)
             .Include(m => m.User).ThenInclude(u => u.WorkLogs)
             .Include(m => m.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .ToListAsync();
+            .ToListAsync())
+            .Where(m => m.User.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
+            .ToList();
 
         // ── If requiredSkills is provided → skill-based suggestions ──
         if (!string.IsNullOrWhiteSpace(requiredSkills))
@@ -175,7 +213,7 @@ public class WorkloadController : ControllerBase
                 var user = m.User;
                 var current = ComputeWorkload(user);
 
-                // A. Skill Match Score (max 40)
+                // A. Skill Match Score (max 50)
                 var userSkills = (user.Skills ?? "")
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .Select(s => s.ToLowerInvariant())
@@ -184,18 +222,29 @@ public class WorkloadController : ControllerBase
                 var matchedCount = reqSkills.Count(rs => userSkills.Contains(rs));
                 var matchPercentage = reqSkills.Count > 0
                     ? Math.Round((double)matchedCount / reqSkills.Count * 100, 1) : 0;
-                var skillScore = matchPercentage / 100.0 * 40.0;
+                var skillScore = matchPercentage / 100.0 * 50.0;
 
                 // B. Availability Score (max 30)
-                var availabilityScore = (100.0 - current.Workload) * 0.30;
+                // Overloaded employees get 0; low-workload employees get up to 30
+                var availabilityScore = Math.Max(0, 1.0 - (current.Workload / 100.0)) * 30.0;
 
-                // C. Performance Score (max 20)
-                var performanceScore = ComputePerformance(user);
+                // C. Performance Score (max 10)
+                var performanceScore = ComputePerformanceNew(user) * (10.0 / 15.0); // normalize to max 10
 
-                // D. Consistency Score (max 10)
-                var consistencyScore = ComputeConsistencyInline(user) * 0.10;
+                // D. Feedback Score (max 5)
+                var feedbackScore = ComputeFeedbackScore(user.UserId) * 0.5;
 
-                var total = Math.Min(100, Math.Round(skillScore + availabilityScore + performanceScore + consistencyScore, 1));
+                // E. Manager Review Score (max 5)
+                var managerScore = ComputeManagerReviewScore(user.UserId) * 0.5;
+
+                var total = Math.Min(100, Math.Round(skillScore + availabilityScore + performanceScore + feedbackScore + managerScore, 1));
+
+                // ── OVERLOAD PENALTY ──
+                // Heavily penalize employees who exceed weekly capacity
+                if (current.Workload > 120)
+                    total = Math.Round(total * 0.4, 1);
+                else if (current.Workload > 100)
+                    total = Math.Round(total * 0.6, 1);
 
                 // Build reason
                 string reason;
@@ -206,6 +255,16 @@ public class WorkloadController : ControllerBase
                 else
                     reason = "No skill match — consider for training";
 
+                // Add feedback context
+                if (feedbackScore >= 4) reason += " • Excellent feedback";
+                else if (feedbackScore >= 3) reason += " • Good feedback";
+
+                // Workload warning
+                var estHours = user.AssignedTasks.Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6).Sum(t => t.EstimatedHours);
+                string? warning = null;
+                if (current.Workload > 100) warning = "Overloaded";
+                else if (current.Workload > 80) warning = "Nearing capacity";
+
                 return new AssignmentSuggestionDto
                 {
                     UserId = m.UserId,
@@ -214,13 +273,19 @@ public class WorkloadController : ControllerBase
                     SkillScore = Math.Round(skillScore, 1),
                     AvailabilityScore = Math.Round(availabilityScore, 1),
                     PerformanceScore = Math.Round(performanceScore, 1),
-                    ConsistencyScore = Math.Round(consistencyScore, 1),
+                    ConsistencyScore = 0, // folded into performance
+                    FeedbackScore = Math.Round(feedbackScore, 1),
+                    ManagerScore = Math.Round(managerScore, 1),
                     AssignmentScore = total,
                     Workload = current.Workload,
+                    EstimatedWorkloadHours = Math.Round(estHours, 1),
+                    WeeklyCapacity = 40.0,
+                    Warning = warning,
                     Reason = reason
                 };
             })
             .OrderByDescending(s => s.AssignmentScore)
+            .Take(5)
             .ToList();
 
             return Ok(suggestions);
@@ -232,7 +297,7 @@ public class WorkloadController : ControllerBase
             {
                 var current = ComputeWorkload(m.User);
 
-                var currentEffort = m.User.AssignedTasks.Where(t => t.Status != 3).Sum(t => t.EstimatedHours);
+                var currentEffort = m.User.AssignedTasks.Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6).Sum(t => t.EstimatedHours);
                 var projectedEffort = currentEffort + hours;
                 var projectedEffortScore = Math.Min(40.0, (projectedEffort / 40.0) * 40.0);
                 var projected = (int)Math.Min(100, Math.Round(
@@ -263,7 +328,7 @@ public class WorkloadController : ControllerBase
     }
 
     // ═══════════════════════════════════════════════════
-    // PERFORMANCE SCORE — completion efficiency (max 20)
+    // PERFORMANCE SCORE — completion efficiency (max 20, used for non-skill recommendations)
     // ═══════════════════════════════════════════════════
 
     private static double ComputePerformance(User user)
@@ -275,6 +340,61 @@ public class WorkloadController : ControllerBase
         var efficiency = (double)completed / allTasks; // 0.0 - 1.0
 
         return Math.Round(efficiency * 20.0, 1);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // PERFORMANCE SCORE — for 6-signal model (max 15)
+    // ═══════════════════════════════════════════════════
+
+    private static double ComputePerformanceNew(User user)
+    {
+        var allTasks = user.AssignedTasks.Count;
+        if (allTasks == 0) return 7.5; // neutral baseline (half of 15)
+
+        var completed = user.AssignedTasks.Count(t => t.Status == 3);
+        var efficiency = (double)completed / allTasks;
+
+        return Math.Round(efficiency * 15.0, 1);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // FEEDBACK SCORE — TeamLead task feedback (max 10)
+    // FeedbackScore = (AverageRating / 5) × 10
+    // Default = 5 if no feedback exists
+    // ═══════════════════════════════════════════════════
+
+    private double ComputeFeedbackScore(int userId)
+    {
+        var feedbacks = _db.TaskFeedbacks
+            .Where(f => f.EmployeeId == userId)
+            .Select(f => f.OverallRating)
+            .ToList();
+
+        if (!feedbacks.Any()) return 5.0; // default
+
+        var avgRating = feedbacks.Average();
+        return Math.Round((avgRating / 5.0) * 10.0, 1);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // MANAGER REVIEW SCORE — periodic reviews (max 10)
+    // ManagerScore = (PerformanceScore / 100) × 10
+    // Default = 6 if no review exists
+    // ═══════════════════════════════════════════════════
+
+    private double ComputeManagerReviewScore(int userId)
+    {
+        var reviews = _db.EmployeeReviews
+            .Where(r => r.EmployeeId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => r.PerformanceScore)
+            .ToList();
+
+        if (!reviews.Any()) return 6.0; // default
+
+        // Use the most recent review
+        var latestScore = reviews.First();
+        return Math.Round((latestScore / 100.0) * 10.0, 1);
     }
 
     // ═══════════════════════════════════════════════════

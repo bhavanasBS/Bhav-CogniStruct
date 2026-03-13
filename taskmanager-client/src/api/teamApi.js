@@ -5,6 +5,7 @@ export const teamApi = {
   getById: (id) => api.get(`/api/teams/${id}`),
   create: (data) => api.post('/api/teams', data),
   update: (id, data) => api.put(`/api/teams/${id}`, data),
+  delete: (id) => api.delete(`/api/teams/${id}`),
   addMember: (teamId, userId) => api.post(`/api/teams/${teamId}/members`, { userId }),
   removeMember: (teamId, userId) => api.delete(`/api/teams/${teamId}/members/${userId}`),
   getMembers: (teamId) => api.get(`/api/teams/${teamId}/members`),

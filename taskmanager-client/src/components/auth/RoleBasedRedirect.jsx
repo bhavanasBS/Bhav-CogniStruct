@@ -30,7 +30,6 @@ const RoleBasedRedirect = () => {
         'Team Lead': '/teamlead/dashboard',
         'TeamLead': '/teamlead/dashboard',
         'Employee': '/employee/dashboard',
-        'HR': '/hr/dashboard',
     };
 
     const homepage = roleHomepages[userRole] || '/employee/dashboard';

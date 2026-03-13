@@ -10,6 +10,9 @@ export const managerApi = {
   // Get dashboard for current authenticated user (manager)
   getMyDashboard: () => api.get('/api/managers/my-dashboard'),
 
+  // Get dashboard for current authenticated team lead
+  getTeamLeadDashboard: () => api.get('/api/managers/teamlead-dashboard'),
+
   // Get hierarchy tree for manager
   getHierarchy: (id) => api.get(`/api/managers/${id}/hierarchy`),
 

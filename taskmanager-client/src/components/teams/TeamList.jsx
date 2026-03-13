@@ -1,10 +1,9 @@
 import Card from '../common/Card';
 import Badge from '../common/Badge';
-import { Users, User, Calendar } from 'lucide-react';
+import { Users, Pencil, Trash2 } from 'lucide-react';
 import { getInitials, generateAvatarColor } from '../../utils/helpers';
-import { formatDate } from '../../utils/dateUtils';
 
-const TeamList = ({ teams, onSelect, isLoading }) => {
+const TeamList = ({ teams, onSelect, onEdit, onDelete, isLoading }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -39,10 +38,32 @@ const TeamList = ({ teams, onSelect, isLoading }) => {
             onClick={() => onSelect?.(team)}
           >
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-base font-semibold text-slate-900">{team.teamName}</h3>
-              <Badge variant={team.isActive ? 'success' : 'danger'} dot>
-                {team.isActive ? 'Active' : 'Inactive'}
-              </Badge>
+              <h3 className="text-base font-semibold text-slate-900 flex-1 mr-2">{team.teamName}</h3>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Edit Button */}
+                {onEdit && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(team); }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
+                    title="Edit Team"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {/* Delete Button */}
+                {onDelete && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(team); }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                    title="Delete Team"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <Badge variant={team.isActive ? 'success' : 'danger'} dot>
+                  {team.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
             </div>
             {team.description && (
               <p className="text-sm text-slate-500 mb-4 line-clamp-2">{team.description}</p>

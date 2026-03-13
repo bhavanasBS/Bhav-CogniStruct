@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, User, Bell, Shield, Palette, Moon, Sun, Globe, Save, Sparkles, Loader2 } from 'lucide-react';
+import { Settings, User, Bell, Shield, Palette, Moon, Sun, Globe, Save, Loader2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { settingsApi } from '../api/settingsApi';
@@ -165,7 +165,6 @@ const SettingsPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             Settings
-                            <Sparkles className="w-5 h-5 text-amber-300" />
                         </h1>
                         <p className="text-white/80 text-sm mt-0.5">Manage your preferences and account settings</p>
                     </div>

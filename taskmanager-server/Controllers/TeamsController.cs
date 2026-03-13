@@ -19,8 +19,8 @@ public class TeamsController : ControllerBase
         _db = db;
     }
 
-    // Admin, Manager, TeamLead, HR can view teams
-    [Authorize(Roles = "Admin,Manager,TeamLead,HR")]
+    // Admin, Manager, TeamLead can view teams
+    [Authorize(Roles = "Admin,Manager,TeamLead")]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? search)
     {
@@ -30,7 +30,7 @@ public class TeamsController : ControllerBase
             .AsQueryable();
 
         // Role-based filtering
-        var isAdmin = User.IsInRole("Admin") || User.IsInRole("HR");
+        var isAdmin = User.IsInRole("Admin");
         if (!isAdmin)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value
@@ -83,8 +83,8 @@ public class TeamsController : ControllerBase
         return Ok(teams.Select(MapToDto));
     }
 
-    // Admin, Manager, TeamLead, HR can view team details
-    [Authorize(Roles = "Admin,Manager,TeamLead,HR")]
+    // Admin, Manager, TeamLead can view team details
+    [Authorize(Roles = "Admin,Manager,TeamLead")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -178,13 +178,36 @@ public class TeamsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var team = await _db.Teams.FindAsync(id);
+        var team = await _db.Teams
+            .Include(t => t.Members)
+            .FirstOrDefaultAsync(t => t.TeamId == id);
         if (team == null) return NotFound();
 
-        _db.Teams.Remove(team);
-        await _db.SaveChangesAsync();
+        try
+        {
+            // Remove all team members first
+            var members = await _db.Set<TeamMember>()
+                .Where(m => m.TeamId == id)
+                .ToListAsync();
+            if (members.Any())
+                _db.Set<TeamMember>().RemoveRange(members);
 
-        return Ok(new { message = "Team deleted." });
+            // Nullify TeamId on tasks that reference this team
+            var tasks = await _db.Tasks
+                .Where(t => t.TeamId == id)
+                .ToListAsync();
+            foreach (var task in tasks)
+                task.TeamId = null;
+
+            _db.Teams.Remove(team);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Team deleted." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Failed to delete team: {ex.InnerException?.Message ?? ex.Message}" });
+        }
     }
 
     // ─── Members ────────────────────────────────────
@@ -231,6 +254,18 @@ public class TeamsController : ControllerBase
     [HttpPost("{teamId}/members")]
     public async Task<IActionResult> AddMember(int teamId, [FromBody] AddMemberRequest request)
     {
+        // Validate: only Employee and TeamLead can be added to teams
+        var targetUser = await _db.Users
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.UserId == request.UserId);
+
+        if (targetUser == null)
+            return NotFound(new { message = "User not found." });
+
+        var userRoles = targetUser.UserRoles.Select(ur => ur.Role.RoleName).ToList();
+        if (userRoles.Contains("Admin") || userRoles.Contains("Manager"))
+            return BadRequest(new { message = "Admin and Manager roles cannot be added to a team." });
+
         var exists = await _db.Set<TeamMember>()
             .AnyAsync(m => m.TeamId == teamId && m.UserId == request.UserId);
 
@@ -276,7 +311,7 @@ public class TeamsController : ControllerBase
     // ─── Hierarchy ──────────────────────────────────
 
     // ─── Full Organization Hierarchy ─────────────────
-    [Authorize(Roles = "Admin,Manager,TeamLead,HR")]
+    [Authorize(Roles = "Admin,Manager,TeamLead")]
     [HttpGet("hierarchy")]
     public async Task<IActionResult> GetFullHierarchy()
     {

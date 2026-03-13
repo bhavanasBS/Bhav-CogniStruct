@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    CheckCircle, XCircle, Clock, Sparkles, Filter,
+    CheckCircle, XCircle, Clock, Filter,
     Loader2, User, FileText, AlertTriangle
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -22,8 +22,8 @@ const ApprovalQueue = () => {
     const fetchApprovals = async () => {
         try {
             setIsLoading(true);
-            // Fetch work logs that need approval
-            const res = await workLogApi.getAll();
+            // Fetch work logs for manager's team
+            const res = await workLogApi.getByTeam(user.userId || user.id);
             const logs = res.data?.items || res.data || [];
 
             // Simulate approval status - in real app, this would come from API
@@ -110,7 +110,6 @@ const ApprovalQueue = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 Approval Queue
-                                <Sparkles className="w-5 h-5 text-amber-300" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Review and approve team submissions</p>
                         </div>

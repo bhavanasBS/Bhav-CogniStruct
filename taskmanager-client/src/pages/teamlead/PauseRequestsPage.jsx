@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, CheckCircle, XCircle, Clock, User, AlertTriangle, Sparkles, Pause } from 'lucide-react';
+import { ShieldAlert, CheckCircle, XCircle, Clock, User, AlertTriangle, Pause } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import Button from '../../components/common/Button';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -71,7 +71,6 @@ const PauseRequestsPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             Pause Requests
-                            <Sparkles className="w-5 h-5 text-yellow-200" />
                         </h1>
                         <p className="text-white/80 text-sm mt-0.5">Review workload escalation requests for your team</p>
                     </div>
@@ -109,6 +108,9 @@ const PauseRequestsPage = () => {
                                         <h4 className="font-semibold text-slate-800">{req.taskTitle}</h4>
                                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
                                             Pending
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${req.isSystemGenerated ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                            {req.isSystemGenerated ? '⚙ System Suggestion' : '👤 Employee Request'}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-slate-500 ml-7">

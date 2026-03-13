@@ -5,7 +5,6 @@ const roleProfileEndpoints = {
   Manager: '/api/manager/profile',
   TeamLead: '/api/teamlead/profile',
   'Team Lead': '/api/teamlead/profile',
-  HR: '/api/hr/profile',
   Employee: '/api/employee/profile',
 };
 

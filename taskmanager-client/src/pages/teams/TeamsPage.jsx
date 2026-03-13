@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users2, Sparkles, Users, CheckCircle, Building2 } from 'lucide-react';
+import { Plus, Users2, Users, CheckCircle, Building2, X, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import SearchBar from '../../components/common/SearchBar';
 import TeamList from '../../components/teams/TeamList';
@@ -14,8 +14,13 @@ const TeamsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(null);
   const [managers, setManagers] = useState([]);
   const navigate = useNavigate();
+
+  // Delete confirmation state
+  const [deleteTeam, setDeleteTeam] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch managers for the dropdown
   const fetchManagers = async () => {
@@ -51,10 +56,50 @@ const TeamsPage = () => {
       await teamApi.create(data);
       toast.success('Team created successfully');
       setShowForm(false);
+      setEditingTeam(null);
       fetchTeams();
     } catch (error) {
       console.error('Failed to create team:', error);
       toast.error('Failed to create team');
+    }
+  };
+
+  const handleUpdateTeam = async (data) => {
+    if (!editingTeam) return;
+    const teamId = editingTeam.id || editingTeam.teamId;
+    try {
+      await teamApi.update(teamId, data);
+      toast.success('Team updated successfully');
+      setShowForm(false);
+      setEditingTeam(null);
+      fetchTeams();
+    } catch (error) {
+      console.error('Failed to update team:', error);
+      toast.error('Failed to update team');
+    }
+  };
+
+  const handleEdit = (team) => {
+    setEditingTeam(team);
+    fetchManagers();
+    setShowForm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTeam) return;
+    const teamId = deleteTeam.id || deleteTeam.teamId;
+    try {
+      setIsDeleting(true);
+      await teamApi.delete(teamId);
+      toast.success(`"${deleteTeam.teamName}" has been deleted`);
+      setDeleteTeam(null);
+      fetchTeams();
+    } catch (error) {
+      console.error('Failed to delete team:', error);
+      const msg = error.response?.data?.message || 'Failed to delete team';
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -78,22 +123,14 @@ const TeamsPage = () => {
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 Team Management
-                <Sparkles className="w-5 h-5 text-amber-300" />
               </h1>
               <p className="text-white/80 text-sm mt-0.5">Organize and manage your teams effectively</p>
             </div>
           </div>
           <div className="flex gap-3">
             <Button
-              variant="secondary"
-              onClick={() => navigate('/teams/hierarchy')}
-              className="!bg-white/20 !text-white hover:!bg-white/30 backdrop-blur-sm"
-            >
-              View Hierarchy
-            </Button>
-            <Button
               icon={Plus}
-              onClick={() => { fetchManagers(); setShowForm(true); }}
+              onClick={() => { setEditingTeam(null); fetchManagers(); setShowForm(true); }}
               className="!bg-white !text-emerald-600 hover:!bg-white/90"
             >
               New Team
@@ -152,15 +189,105 @@ const TeamsPage = () => {
 
       {/* Team List */}
       <Card className="overflow-hidden">
-        <TeamList teams={teams} isLoading={isLoading} onSelect={(team) => navigate(`/teams/${team.teamId}`)} />
+        <TeamList
+          teams={teams}
+          isLoading={isLoading}
+          onSelect={(team) => navigate(`/teams/${team.id || team.teamId}`)}
+          onEdit={handleEdit}
+          onDelete={(team) => setDeleteTeam(team)}
+        />
       </Card>
 
+      {/* Create / Edit Team Form Modal */}
       <TeamForm
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        onSubmit={handleCreateTeam}
+        onClose={() => { setShowForm(false); setEditingTeam(null); }}
+        onSubmit={editingTeam ? handleUpdateTeam : handleCreateTeam}
+        team={editingTeam}
         managers={managers}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTeam(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Delete Team</h2>
+                  <p className="text-xs text-slate-400">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => !isDeleting && setDeleteTeam(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-red-800 font-medium">
+                    Are you sure you want to delete "{deleteTeam.teamName}"?
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    This will permanently remove the team, including all member associations. Tasks assigned to this team will not be deleted but will lose their team reference.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-slate-500">Team:</span>
+                  <span className="font-semibold text-slate-800">{deleteTeam.teamName}</span>
+                </div>
+                {deleteTeam.managerName && (
+                  <div className="flex items-center gap-2 text-sm mt-1">
+                    <span className="text-slate-500">Manager:</span>
+                    <span className="font-medium text-slate-700">{deleteTeam.managerName}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm mt-1">
+                  <span className="text-slate-500">Members:</span>
+                  <span className="font-medium text-slate-700">{deleteTeam.memberCount || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => !isDeleting && setDeleteTeam(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                {isDeleting ? 'Deleting...' : 'Delete Team'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

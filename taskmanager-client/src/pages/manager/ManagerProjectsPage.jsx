@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { FolderKanban, Sparkles, CheckCircle, Clock, AlertTriangle, BarChart3, PauseCircle, Shield, TrendingUp, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FolderKanban, CheckCircle, Clock, AlertTriangle, BarChart3, PauseCircle, Shield, TrendingUp, Activity } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
 import api from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 
 const ManagerProjectsPage = () => {
+    const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
     const [healthData, setHealthData] = useState({});
     const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +85,6 @@ const ManagerProjectsPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             Project Overview
-                            <Sparkles className="w-5 h-5 text-yellow-200" />
                         </h1>
                         <p className="text-white/80 text-sm mt-0.5">Monitor all active projects across your teams</p>
                     </div>
@@ -167,7 +168,7 @@ const ManagerProjectsPage = () => {
                                     : 'bg-rose-500';
 
                         return (
-                            <div key={project.id} className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <div key={project.id} onClick={() => navigate(`/manager/projects/${project.id}`)} className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer">
                                 {/* Project Header */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                     <div className="flex-1">

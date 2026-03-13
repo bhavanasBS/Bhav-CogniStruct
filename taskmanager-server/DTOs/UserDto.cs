@@ -97,13 +97,13 @@ public class UserProfileDto
     public int DirectReportsCount { get; set; }
     public int ManagedTeamsCount { get; set; }
 
-    // Role-specific: Admin / HR — system-wide overview
+    // Role-specific: Admin — system-wide overview
     public int? AllUsersCount { get; set; }
     public int? AllTeamsCount { get; set; }
     public int? AllTasksCount { get; set; }
     public int? ActiveUsersCount { get; set; }
 
-    // Role-specific: HR — org health
+    // Role-specific: Admin — org health
     public int? InactiveUsersCount { get; set; }
     public int? NewHiresThisMonth { get; set; }
     public int? DepartmentCount { get; set; }

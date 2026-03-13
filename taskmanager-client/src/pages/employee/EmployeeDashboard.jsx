@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    LayoutDashboard, Sparkles, CheckSquare, Clock, Target,
+    LayoutDashboard, CheckSquare, Clock, Target,
     Flame, Trophy, TrendingUp, ArrowUpRight, Loader2, Star
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -13,7 +13,8 @@ import toast from 'react-hot-toast';
 
 const EmployeeDashboard = () => {
     const authCtx = useAuthContext();
-    const user = authCtx?.user || { firstName: 'Employee', userId: 1 };
+    const user = authCtx?.user || { firstName: 'Employee' };
+    const currentUserId = user.userId || user.id;
     const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -25,21 +26,16 @@ const EmployeeDashboard = () => {
         streak: 7, // Mock streak for now
     });
     const [myTasks, setMyTasks] = useState([]);
-    const [dailyGoals, setDailyGoals] = useState([
-        { id: 1, title: 'Complete 3 tasks', done: false },
-        { id: 2, title: 'Log 4 hours', done: false },
-        { id: 3, title: 'Help a teammate', done: false },
-    ]);
 
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const tasksRes = await taskApi.getAll({ assigneeId: user.userId });
+            const tasksRes = await taskApi.getAll({ assigneeId: currentUserId });
             const tasks = tasksRes.data?.items || tasksRes.data || [];
 
-            const myAssigned = tasks.filter(t => t.assigneeId === user.userId || t.assigneeName?.includes(user.firstName));
-            const completed = myAssigned.filter(t => t.status === 2 || t.status === 3);
-            const inProgress = myAssigned.filter(t => t.status === 1);
+            const myAssigned = tasks.filter(t => t.assigneeId === currentUserId || t.assigneeName?.includes(user.firstName));
+            const completed = myAssigned.filter(t => t.status === 3);
+            const inProgress = myAssigned.filter(t => t.status === 2);
 
             setMyTasks(myAssigned.slice(0, 5));
             setStats(prev => ({
@@ -51,7 +47,7 @@ const EmployeeDashboard = () => {
 
             // Try to fetch today's work logs
             try {
-                const logsRes = await workLogApi.getByEmployee(user.userId, {});
+                const logsRes = await workLogApi.getByEmployee(currentUserId, {});
                 const logs = logsRes.data?.items || logsRes.data || [];
                 const todayLogs = logs.filter(l => {
                     const logDate = new Date(l.logDate || l.createdDate);
@@ -78,9 +74,12 @@ const EmployeeDashboard = () => {
     const getStatusColor = (status) => {
         switch (status) {
             case 0: return 'bg-slate-100 text-slate-600';
-            case 1: return 'bg-blue-100 text-blue-700';
-            case 2: return 'bg-emerald-100 text-emerald-700';
+            case 1: return 'bg-sky-100 text-sky-700';
+            case 2: return 'bg-blue-100 text-blue-700';
             case 3: return 'bg-emerald-100 text-emerald-700';
+            case 4: return 'bg-amber-100 text-amber-700';
+            case 5: return 'bg-red-100 text-red-700';
+            case 6: return 'bg-gray-100 text-gray-500';
             default: return 'bg-slate-100 text-slate-600';
         }
     };
@@ -88,9 +87,12 @@ const EmployeeDashboard = () => {
     const getStatusLabel = (status) => {
         switch (status) {
             case 0: return 'Pending';
-            case 1: return 'In Progress';
-            case 2: return 'Completed';
+            case 1: return 'Assigned';
+            case 2: return 'In Progress';
             case 3: return 'Completed';
+            case 4: return 'Paused';
+            case 5: return 'Blocked';
+            case 6: return 'Cancelled';
             default: return 'Unknown';
         }
     };
@@ -120,7 +122,6 @@ const EmployeeDashboard = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, {user.firstName}!
-                                <Sparkles className="w-5 h-5 text-amber-300" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Here's your productivity snapshot for today</p>
                         </div>
@@ -238,53 +239,6 @@ const EmployeeDashboard = () => {
                                 </div>
                             ))
                         )}
-                    </div>
-                </Card>
-
-                {/* Daily Goals */}
-                <Card>
-                    <div className="px-6 py-4 border-b border-slate-200">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                                <Target className="h-4 w-4 text-white" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-900">Today's Goals</h3>
-                        </div>
-                    </div>
-                    <div className="p-4 space-y-3">
-                        {dailyGoals.map((goal) => (
-                            <div
-                                key={goal.id}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${goal.done
-                                    ? 'bg-emerald-50 border-emerald-200'
-                                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                                    }`}
-                                onClick={() => setDailyGoals(prev =>
-                                    prev.map(g => g.id === goal.id ? { ...g, done: !g.done } : g)
-                                )}
-                            >
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${goal.done
-                                    ? 'bg-emerald-500 border-emerald-500'
-                                    : 'border-slate-300'
-                                    }`}>
-                                    {goal.done && <Star className="w-3 h-3 text-white" />}
-                                </div>
-                                <span className={`text-sm ${goal.done ? 'text-emerald-700 line-through' : 'text-slate-700'}`}>
-                                    {goal.title}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="px-4 pb-4">
-                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all"
-                                style={{ width: `${(dailyGoals.filter(g => g.done).length / dailyGoals.length) * 100}%` }}
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2 text-center">
-                            {dailyGoals.filter(g => g.done).length} of {dailyGoals.length} goals completed
-                        </p>
                     </div>
                 </Card>
             </div>

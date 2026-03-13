@@ -220,7 +220,6 @@ const UserForm = ({ isOpen, onClose, onSubmit, user = null, roles = [], isLoadin
               { roleId: 2, roleName: 'Manager' },
               { roleId: 3, roleName: 'Employee' },
               { roleId: 4, roleName: 'TeamLead' },
-              { roleId: 5, roleName: 'HR' },
             ]).map((role) => (
               <button
                 key={role.roleId}

@@ -1,5 +1,5 @@
 import LoginForm from '../components/auth/LoginForm';
-import { CheckCircle, Users, BarChart3, Clock, Brain, Sparkles, Lightbulb, Target } from 'lucide-react';
+import { CheckCircle, Users, BarChart3, Clock, Brain, Lightbulb, Target } from 'lucide-react';
 
 const features = [
   { icon: Users, text: 'Team Synergy', desc: 'Collaborate mindfully', gradient: 'from-purple-500 to-violet-600', bg: 'bg-purple-50' },
@@ -46,8 +46,7 @@ const LoginPage = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">CogniStruct</h1>
-                <p className="text-purple-300 text-sm flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Cognitive Task Management
+                <p className="text-purple-300 text-sm flex items-center gap-1"> Cognitive Task Management
                 </p>
               </div>
             </div>
@@ -135,8 +134,7 @@ const LoginPage = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">CogniStruct</h1>
-              <p className="text-purple-600 text-xs flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Cognitive Task Management
+              <p className="text-purple-600 text-xs flex items-center gap-1"> Cognitive Task Management
               </p>
             </div>
           </div>
@@ -167,8 +165,7 @@ const LoginPage = () => {
                 { text: 'Focused', color: 'from-blue-100/80 to-blue-200/60 text-blue-700 border-blue-300/50' },
                 { text: 'Creative', color: 'from-amber-100/80 to-amber-200/60 text-amber-700 border-amber-300/50' },
               ].map((tag) => (
-                <span key={tag.text} className={`px-3 py-1.5 bg-gradient-to-r ${tag.color} backdrop-blur-sm text-xs font-medium rounded-full border flex items-center gap-1 shadow-sm`}>
-                  <Sparkles className="w-3 h-3" /> {tag.text}
+                <span key={tag.text} className={`px-3 py-1.5 bg-gradient-to-r ${tag.color} backdrop-blur-sm text-xs font-medium rounded-full border flex items-center gap-1 shadow-sm`}> {tag.text}
                 </span>
               ))}
             </div>

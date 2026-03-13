@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    FileText, Sparkles, Filter, Search, Calendar,
+    FileText, Filter, Search, Calendar,
     User, Activity, Shield, Clock, ChevronDown, Loader2
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -95,7 +95,6 @@ const AuditLogPage = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 Audit Log
-                                <Sparkles className="w-5 h-5 text-amber-300" />
                             </h1>
                             <p className="text-white/70 text-sm mt-0.5">Track all system activities</p>
                         </div>

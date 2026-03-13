@@ -34,14 +34,6 @@ export const MOCK_USERS = [
         lastName: 'User',
     },
     {
-        id: 4,
-        email: 'hr@test.com',
-        password: 'hr@123',
-        role: 'HR',
-        firstName: 'HR',
-        lastName: 'User',
-    },
-    {
         id: 5,
         email: 'teamlead@test.com',
         password: 'lead123',

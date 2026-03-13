@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Sparkles, CheckCircle, Clock, AlertTriangle, BarChart3, PauseCircle } from 'lucide-react';
+import { FolderKanban, CheckCircle, Clock, AlertTriangle, BarChart3, PauseCircle } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
 import toast from 'react-hot-toast';
 
@@ -75,7 +75,6 @@ const MyProjectsPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             My Projects
-                            <Sparkles className="w-5 h-5 text-yellow-200" />
                         </h1>
                         <p className="text-white/80 text-sm mt-0.5">Manage assigned projects and create subtasks for your team</p>
                     </div>

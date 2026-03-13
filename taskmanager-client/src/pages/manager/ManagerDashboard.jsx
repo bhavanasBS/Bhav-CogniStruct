@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-    LayoutDashboard, Sparkles, Users, ClipboardList, CheckCircle, Clock,
-    TrendingUp, AlertCircle, ArrowUpRight, BarChart3, Target, Loader2
+    LayoutDashboard, Users, ClipboardList, CheckCircle, Clock,
+    TrendingUp, AlertCircle, ArrowUpRight, BarChart3, Target, Loader2, Star, Award, Calendar
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -17,6 +17,7 @@ const ManagerDashboard = () => {
 
     const [dashboard, setDashboard] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [teamPerformance, setTeamPerformance] = useState([]);
 
     const fetchData = async () => {
         try {
@@ -27,7 +28,7 @@ const ManagerDashboard = () => {
             console.error('Failed to fetch dashboard data:', error);
             // Fallback: try with user ID
             try {
-                const response = await managerApi.getDashboard(user.userId || 1);
+                const response = await managerApi.getDashboard(user.userId || user.id || 1);
                 setDashboard(response.data);
             } catch (e) {
                 toast.error('Failed to load dashboard data');
@@ -37,9 +38,28 @@ const ManagerDashboard = () => {
         }
     };
 
+    // Fetch team performance analytics
+    const fetchTeamPerformance = async (teamId) => {
+        try {
+            const api = (await import('../../api/axiosInstance')).default;
+            const res = await api.get(`/api/analytics/team-performance/${teamId}`);
+            setTeamPerformance(res.data || []);
+        } catch (err) {
+            console.error('Failed to fetch team performance:', err);
+        }
+    };
+
     useEffect(() => {
         fetchData();
     }, []);
+
+    // Auto-fetch team performance for first team
+    useEffect(() => {
+        const teamReports = dashboard?.teamReports || [];
+        if (teamReports.length > 0 && teamReports[0]?.id) {
+            fetchTeamPerformance(teamReports[0].id);
+        }
+    }, [dashboard]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -86,19 +106,26 @@ const ManagerDashboard = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
-                                Manager Dashboard
-                                <Sparkles className="w-5 h-5 text-amber-300" />
+                                {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}, {user.firstName}
                             </h1>
-                            <p className="text-white/80 text-sm mt-0.5">Welcome back, {user.firstName}. Here's your team overview.</p>
+                            <p className="text-white/80 text-sm mt-0.5">Your team's performance overview — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => navigate('/manager/team')}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                        <Users className="w-4 h-4" />
-                        View My Team
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20">
+                            <Calendar className="w-4 h-4 text-white/70" />
+                            <span className="text-sm font-medium text-white/90">
+                                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => navigate('/manager/team')}
+                            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer border border-white/20"
+                        >
+                            <Users className="w-4 h-4" />
+                            View My Team
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -276,6 +303,86 @@ const ManagerDashboard = () => {
                     <ArrowUpRight className="w-4 h-4 text-slate-300 ml-auto group-hover:text-amber-500 transition-colors" />
                 </button>
             </div>
+
+            {/* AI Workforce Analytics Table */}
+            {teamPerformance.length > 0 && (
+                <Card>
+                    <div className="px-6 py-4 border-b border-slate-200">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <Award className="h-4 w-4 text-white" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900">AI Workforce Analytics</h3>
+                            <span className="ml-auto text-xs text-slate-400">Performance intelligence signals</span>
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Employee</th>
+                                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Feedback Rating</th>
+                                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Review Score</th>
+                                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Productivity</th>
+                                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Avg Completion</th>
+                                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Overdue Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {teamPerformance.map((emp) => (
+                                    <tr key={emp.employeeId} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-bold text-indigo-700">
+                                                    {emp.employeeName?.charAt(0)?.toUpperCase()}
+                                                </div>
+                                                <span className="font-medium text-slate-800">{emp.employeeName}</span>
+                                            </div>
+                                        </td>
+                                        <td className="text-center px-4 py-3">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
+                                                <span className="font-semibold text-slate-700">{emp.averageFeedbackRating || '—'}</span>
+                                                <span className="text-xs text-slate-400">/5</span>
+                                            </div>
+                                        </td>
+                                        <td className="text-center px-4 py-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                emp.managerReviewScore >= 80 ? 'bg-emerald-100 text-emerald-700'
+                                                : emp.managerReviewScore >= 60 ? 'bg-blue-100 text-blue-700'
+                                                : emp.managerReviewScore > 0 ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-slate-100 text-slate-400'
+                                            }`}>
+                                                {emp.managerReviewScore || '—'}
+                                            </span>
+                                        </td>
+                                        <td className="text-center px-4 py-3">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full ${
+                                                        emp.productivityScore >= 70 ? 'bg-emerald-500' : emp.productivityScore >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                                                    }`} style={{ width: `${emp.productivityScore}%` }} />
+                                                </div>
+                                                <span className="text-xs font-semibold text-slate-600">{emp.productivityScore}%</span>
+                                            </div>
+                                        </td>
+                                        <td className="text-center px-4 py-3 text-slate-600">
+                                            {emp.averageCompletionTime > 0 ? `${emp.averageCompletionTime}h` : '—'}
+                                        </td>
+                                        <td className="text-center px-4 py-3">
+                                            <span className={`text-xs font-semibold ${
+                                                emp.overdueRate === 0 ? 'text-emerald-600' : emp.overdueRate <= 20 ? 'text-amber-600' : 'text-rose-600'
+                                            }`}>
+                                                {emp.overdueRate}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
         </div>
     );
 };

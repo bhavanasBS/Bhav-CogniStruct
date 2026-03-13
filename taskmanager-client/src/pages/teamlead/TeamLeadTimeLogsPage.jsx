@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Sparkles, Calendar, Timer, CheckCircle, Users, User } from 'lucide-react';
+import { Clock, Calendar, Timer, CheckCircle, Users, User } from 'lucide-react';
 import Card from '../../components/common/Card';
 import { workLogApi } from '../../api/workLogApi';
 import { useAuthContext } from '../../context/AuthContext';
@@ -60,7 +60,6 @@ const TeamLeadTimeLogsPage = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 Team Time Logs
-                                <Sparkles className="w-5 h-5 text-emerald-200" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Track and review your team's logged hours</p>
                         </div>

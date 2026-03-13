@@ -5,7 +5,7 @@ import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import TeamMemberList from '../../components/teams/TeamMemberList';
-import HierarchyTree from '../../components/teams/HierarchyTree';
+
 import { PageLoader } from '../../components/common/LoadingSpinner';
 import { teamApi } from '../../api/teamApi';
 import toast from 'react-hot-toast';
@@ -109,18 +109,8 @@ const TeamDetailPage = () => {
 
   const tabs = [
     { key: 'members', label: 'Members' },
-    { key: 'hierarchy', label: 'Hierarchy' },
     { key: 'tasks', label: 'Tasks' },
   ];
-
-  const hierarchyData = {
-    firstName: team.managerName?.split(' ')[0] || '',
-    lastName: team.managerName?.split(' ').slice(1).join(' ') || '',
-    email: '',
-    role: 'Manager',
-    teamName: team.teamName,
-    children: members.map((m) => ({ ...m, children: [] })),
-  };
 
   return (
     <div className="space-y-6">
@@ -195,11 +185,7 @@ const TeamDetailPage = () => {
           />
         </Card>
       )}
-      {activeTab === 'hierarchy' && (
-        <Card padding={false}>
-          <HierarchyTree data={hierarchyData} />
-        </Card>
-      )}
+
       {activeTab === 'tasks' && (
         <Card>
           <p className="text-sm text-slate-400 text-center py-8">Team tasks will appear here</p>

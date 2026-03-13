@@ -17,7 +17,6 @@ public static class DbSeeder
                 new() { RoleName = "Manager", Description = "Team management, task assignment, view team analytics, approve time logs" },
                 new() { RoleName = "TeamLead", Description = "Assign tasks within team, view team progress, limited reporting" },
                 new() { RoleName = "Employee", Description = "View assigned tasks, log work hours, update task status" },
-                new() { RoleName = "HR", Description = "View employee records, performance reports, team structures" },
             };
             db.Roles.AddRange(roles);
             db.SaveChanges();

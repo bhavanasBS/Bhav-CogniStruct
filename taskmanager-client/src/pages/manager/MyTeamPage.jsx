@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Users, Sparkles, ClipboardList, CheckCircle, Plus,
+    Users, ClipboardList, CheckCircle, Plus,
     Mail, UserCheck, Loader2, Search, ArrowUpRight,
     FolderPlus, UserPlus, X, Trash2
 } from 'lucide-react';
@@ -61,7 +61,13 @@ const MyTeamPage = () => {
         try {
             setLoadingEmployees(true);
             const res = await userApi.getMyEmployees();
-            setEmployees(res.data || []);
+            const all = res.data || [];
+            // Only show Employee and TeamLead roles (safety filter)
+            const filtered = all.filter(u => {
+                const roles = u.roles || [];
+                return roles.includes('Employee') || roles.includes('TeamLead');
+            });
+            setEmployees(filtered);
         } catch (error) {
             console.error('Failed to fetch employees:', error);
             toast.error('Failed to load employees');
@@ -177,7 +183,7 @@ const MyTeamPage = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
-                                My Team <Sparkles className="w-5 h-5 text-amber-300" />
+                                My Team
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Manage your teams and assigned employees</p>
                         </div>

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import CustomSelect from '../common/CustomSelect';
+import DateTimePicker from '../common/DateTimePicker';
 import { TASK_PRIORITY_LABELS } from '../../utils/constants';
-import { User, Users2, Flag } from 'lucide-react';
+import { User, Users2, Flag, AlertTriangle, Zap } from 'lucide-react';
+import api from '../../api/axiosInstance';
 
 const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], teams = [], isLoading, onTeamChange }) => {
   const isEdit = !!task;
@@ -18,6 +20,10 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
   });
   const [errors, setErrors] = useState({});
 
+  // Workload preview state
+  const [assigneeWorkload, setAssigneeWorkload] = useState(null);
+  const [loadingWorkload, setLoadingWorkload] = useState(false);
+
   const handleChange = (field) => (e) => {
     setForm((p) => ({ ...p, [field]: e.target.value }));
     setErrors((p) => ({ ...p, [field]: '' }));
@@ -29,9 +35,42 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
     // When team changes, reset assignee and load team members
     if (field === 'teamId' && onTeamChange) {
       setForm((p) => ({ ...p, assignedTo: '' }));
+      setAssigneeWorkload(null);
       onTeamChange(value);
     }
+    // When assignee changes, fetch their workload
+    if (field === 'assignedTo' && value) {
+      fetchWorkload(value);
+    } else if (field === 'assignedTo' && !value) {
+      setAssigneeWorkload(null);
+    }
   };
+
+  // Fetch workload for selected employee
+  const fetchWorkload = async (userId) => {
+    try {
+      setLoadingWorkload(true);
+      const res = await api.get(`/api/workload/employee/${userId}`);
+      setAssigneeWorkload(res.data);
+    } catch {
+      setAssigneeWorkload(null);
+    } finally {
+      setLoadingWorkload(false);
+    }
+  };
+
+  // Calculate projected workload with new task
+  const getProjectedWorkload = () => {
+    if (!assigneeWorkload) return null;
+    const current = assigneeWorkload.estimatedWorkloadHours || 0;
+    const newHours = Number(form.estimatedHours) || 0;
+    const projected = current + newHours;
+    const capacity = assigneeWorkload.weeklyCapacity || 40;
+    const percent = capacity > 0 ? Math.round((projected / capacity) * 100) : 0;
+    return { current, newHours, projected, capacity, percent };
+  };
+
+  const projected = getProjectedWorkload();
 
   const validate = () => {
     const errs = {};
@@ -49,10 +88,8 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
   };
 
   const employeeList = employees;
-
   const teamList = teams;
 
-  // Convert to CustomSelect options format
   const employeeOptions = [
     { value: '', label: 'Select employee' },
     ...employeeList.map(e => ({ value: e.userId, label: `${e.firstName} ${e.lastName}` }))
@@ -107,6 +144,48 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
               className={errors.assignedTo ? 'ring-2 ring-danger-200 rounded-lg' : ''}
             />
             {errors.assignedTo && <p className="text-xs text-danger-500 mt-1">{errors.assignedTo}</p>}
+
+            {/* Workload Preview */}
+            {loadingWorkload && (
+              <div className="mt-2 p-2 bg-slate-50 rounded-lg text-xs text-slate-400 animate-pulse">Loading workload...</div>
+            )}
+            {assigneeWorkload && projected && !loadingWorkload && (
+              <div className={`mt-2 p-3 rounded-lg border text-xs ${
+                projected.percent > 100 ? 'bg-red-50 border-red-200' :
+                projected.percent > 80 ? 'bg-amber-50 border-amber-200' :
+                'bg-emerald-50 border-emerald-200'
+              }`}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Zap className={`w-3.5 h-3.5 ${projected.percent > 100 ? 'text-red-500' : projected.percent > 80 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                  <span className="font-semibold text-slate-700">Workload Preview</span>
+                </div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-slate-500">Current: {projected.current}h</span>
+                  <span className="text-slate-500">+ {projected.newHours}h = <strong className="text-slate-700">{projected.projected}h</strong></span>
+                </div>
+                <div className="w-full h-1.5 bg-white rounded-full overflow-hidden mb-1.5">
+                  <div
+                    className={`h-full rounded-full transition-all ${projected.percent > 100 ? 'bg-red-500' : projected.percent > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${Math.min(projected.percent, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <span className={`font-bold ${projected.percent > 100 ? 'text-red-600' : projected.percent > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {projected.percent}% of {projected.capacity}h capacity
+                  </span>
+                </div>
+                {projected.percent > 100 && (
+                  <div className="flex items-center gap-1 mt-1.5 text-red-600 font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Employee will exceed weekly capacity
+                  </div>
+                )}
+                {projected.percent > 80 && projected.percent <= 100 && (
+                  <div className="flex items-center gap-1 mt-1.5 text-amber-600 font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Employee is nearing capacity
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label className="label">Team</label>
@@ -133,7 +212,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
           </div>
           <div>
             <label className="label">Deadline</label>
-            <input type="datetime-local" value={form.deadline} onChange={handleChange('deadline')} className={`input ${errors.deadline ? 'input-error' : ''}`} />
+            <DateTimePicker value={form.deadline} onChange={(val) => { setForm(p => ({...p, deadline: val})); setErrors(p => ({...p, deadline: ''})); }} error={!!errors.deadline} placeholder="Select deadline" />
             {errors.deadline && <p className="text-xs text-danger-500 mt-1">{errors.deadline}</p>}
           </div>
           <div>

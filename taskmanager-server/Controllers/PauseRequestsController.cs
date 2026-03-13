@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.API.Data;
+using TaskManager.API.DTOs;
 using TaskManager.API.Models;
 using System.Security.Claims;
 
@@ -17,6 +18,71 @@ public class PauseRequestsController : ControllerBase
     public PauseRequestsController(AppDbContext db)
     {
         _db = db;
+    }
+
+    // ─── POST /api/pause-requests/request ─────────────
+    // Employee requests a pause for their assigned task
+    [Authorize(Roles = "Employee")]
+    [HttpPost("request")]
+    public async Task<IActionResult> CreateRequest([FromBody] PauseRequestDto dto)
+    {
+        var currentUserId = GetCurrentUserId();
+
+        var task = await _db.Tasks
+            .Include(t => t.ParentTask)
+            .FirstOrDefaultAsync(t => t.TaskId == dto.TaskId);
+        if (task == null) return NotFound(new { message = "Task not found." });
+
+        // Must be assignee
+        if (task.AssigneeId != currentUserId)
+            return StatusCode(403, new { message = "You can only request pause for tasks assigned to you." });
+
+        // Task not completed or already paused
+        if (task.Status == 3)
+            return BadRequest(new { message = "Cannot request pause for a completed task." });
+        if (task.Status == 4)
+            return BadRequest(new { message = "Task is already paused." });
+
+        // No existing pending request
+        var existingPending = await _db.PauseRequests
+            .AnyAsync(p => p.TaskId == dto.TaskId && p.Status == 0);
+        if (existingPending)
+            return BadRequest(new { message = "A pending pause request already exists for this task." });
+
+        var pauseRequest = new PauseRequest
+        {
+            TaskId = dto.TaskId,
+            EmployeeId = currentUserId,
+            RequestedByUserId = currentUserId,
+            Reason = dto.Reason,
+            Status = 0, // Pending
+            IsSystemGenerated = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.PauseRequests.Add(pauseRequest);
+
+        // Notify TeamLead (project owner)
+        if (task.ParentTaskId.HasValue)
+        {
+            var parentTask = task.ParentTask ?? await _db.Tasks.FindAsync(task.ParentTaskId.Value);
+            if (parentTask?.AssigneeId != null)
+            {
+                var employee = await _db.Users.FindAsync(currentUserId);
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = parentTask.AssigneeId.Value,
+                    Title = "Pause Request",
+                    Type = "pause_request",
+                    Message = $"{employee?.FirstName} {employee?.LastName} requested pause for task \"{task.Title}\"",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Pause request submitted. Awaiting TeamLead approval." });
     }
 
     // ─── GET /api/pause-requests/pending ────────────
@@ -59,6 +125,7 @@ public class PauseRequestsController : ControllerBase
                 requestedByName = p.RequestedBy.FirstName + " " + p.RequestedBy.LastName,
                 p.Reason,
                 p.Status,
+                p.IsSystemGenerated,
                 p.CreatedAt
             })
             .ToListAsync();
@@ -107,6 +174,7 @@ public class PauseRequestsController : ControllerBase
                 requestedByName = p.RequestedBy.FirstName + " " + p.RequestedBy.LastName,
                 p.Reason,
                 p.Status,
+                p.IsSystemGenerated,
                 p.CreatedAt,
                 approvedByName = p.ApprovedBy != null
                     ? p.ApprovedBy.FirstName + " " + p.ApprovedBy.LastName
@@ -166,11 +234,41 @@ public class PauseRequestsController : ControllerBase
             _db.Notifications.Add(new Notification
             {
                 UserId = task.AssigneeId.Value,
+                Title = "Task Paused",
                 Type = "task_paused",
                 Message = $"Your task \"{task.Title}\" has been paused due to workload escalation.",
                 IsRead = false,
                 CreatedDate = DateTime.UtcNow
             });
+        }
+
+        // Notify Employee — approved
+        _db.Notifications.Add(new Notification
+        {
+            UserId = request.EmployeeId,
+            Title = "Pause Approved",
+            Type = "pause_approved",
+            Message = $"Your pause request for \"{task.Title}\" has been approved.",
+            IsRead = false,
+            CreatedDate = DateTime.UtcNow
+        });
+
+        // Notify Manager (team owner)
+        if (task.TeamId.HasValue)
+        {
+            var team = await _db.Teams.FindAsync(task.TeamId.Value);
+            if (team?.ManagerId != null)
+            {
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = team.ManagerId.Value,
+                    Title = "Pause Approved",
+                    Type = "pause_approved",
+                    Message = $"Pause request approved for task \"{task.Title}\".",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+            }
         }
 
         await _db.SaveChangesAsync();
@@ -193,6 +291,18 @@ public class PauseRequestsController : ControllerBase
         request.Status = 2; // Rejected
         request.ApprovedByUserId = currentUserId;
         request.ApprovedAt = DateTime.UtcNow;
+
+        // Notify Employee — rejected
+        var rejTask = await _db.Tasks.FindAsync(request.TaskId);
+        _db.Notifications.Add(new Notification
+        {
+            UserId = request.EmployeeId,
+            Title = "Pause Rejected",
+            Type = "pause_rejected",
+            Message = $"Your pause request for \"{rejTask?.Title ?? $"Task #{request.TaskId}"}\" has been rejected.",
+            IsRead = false,
+            CreatedDate = DateTime.UtcNow
+        });
 
         await _db.SaveChangesAsync();
 

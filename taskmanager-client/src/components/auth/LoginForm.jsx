@@ -37,7 +37,6 @@ const LoginForm = () => {
         'Team Lead': '/teamlead/dashboard',
         'TeamLead': '/teamlead/dashboard',
         'Employee': '/employee/dashboard',
-        'HR': '/hr/dashboard',
       };
       const redirectPath = roleRedirects[role] || '/employee/dashboard';
       navigate(redirectPath);

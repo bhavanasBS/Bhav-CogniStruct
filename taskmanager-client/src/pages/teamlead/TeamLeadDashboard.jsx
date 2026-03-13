@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-    LayoutDashboard, Sparkles, Users, ClipboardList, CheckCircle, Clock,
-    TrendingUp, AlertCircle, ArrowUpRight, BarChart3, Target, Loader2, Star
+    LayoutDashboard, Users, ClipboardList, CheckCircle, Clock,
+    TrendingUp, AlertCircle, ArrowUpRight, BarChart3, Target, Loader2, Star, Calendar
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -21,12 +21,14 @@ const TeamLeadDashboard = () => {
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const response = await managerApi.getMyDashboard();
+            // TeamLeads are linked via TeamMembers, not Teams.ManagerId
+            const response = await managerApi.getTeamLeadDashboard();
             setDashboard(response.data);
         } catch (error) {
-            console.error('Failed to fetch dashboard data:', error);
+            console.error('Failed to fetch teamlead dashboard data:', error);
             try {
-                const response = await managerApi.getDashboard(user.userId || 1);
+                // Fallback to manager dashboard (for users with dual roles)
+                const response = await managerApi.getMyDashboard();
                 setDashboard(response.data);
             } catch (e) {
                 toast.error('Failed to load dashboard data');
@@ -85,19 +87,26 @@ const TeamLeadDashboard = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
-                                Team Lead Dashboard
-                                <Sparkles className="w-5 h-5 text-yellow-200" />
+                                {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}, {user.firstName}
                             </h1>
-                            <p className="text-white/80 text-sm mt-0.5">Welcome back, {user.firstName}. Here's your team overview.</p>
+                            <p className="text-white/80 text-sm mt-0.5">Your team's progress at a glance — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => navigate('/manager/team')}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                        <Users className="w-4 h-4" />
-                        View My Team
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20">
+                            <Calendar className="w-4 h-4 text-white/70" />
+                            <span className="text-sm font-medium text-white/90">
+                                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => navigate('/teamlead/team')}
+                            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer border border-white/20"
+                        >
+                            <Users className="w-4 h-4" />
+                            View My Team
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -235,7 +244,7 @@ const TeamLeadDashboard = () => {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
-                    onClick={() => navigate('/tasks')}
+                    onClick={() => navigate('/teamlead/tasks')}
                     className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-amber-200 transition-all flex items-center gap-3 cursor-pointer group"
                 >
                     <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-500 transition-colors">
@@ -248,7 +257,7 @@ const TeamLeadDashboard = () => {
                     <ArrowUpRight className="w-4 h-4 text-slate-300 ml-auto group-hover:text-amber-500 transition-colors" />
                 </button>
                 <button
-                    onClick={() => navigate('/manager/team')}
+                    onClick={() => navigate('/teamlead/team')}
                     className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-amber-200 transition-all flex items-center gap-3 cursor-pointer group"
                 >
                     <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
@@ -261,7 +270,7 @@ const TeamLeadDashboard = () => {
                     <ArrowUpRight className="w-4 h-4 text-slate-300 ml-auto group-hover:text-emerald-500 transition-colors" />
                 </button>
                 <button
-                    onClick={() => navigate('/time-logs')}
+                    onClick={() => navigate('/teamlead/time-logs')}
                     className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-amber-200 transition-all flex items-center gap-3 cursor-pointer group"
                 >
                     <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center group-hover:bg-rose-500 transition-colors">

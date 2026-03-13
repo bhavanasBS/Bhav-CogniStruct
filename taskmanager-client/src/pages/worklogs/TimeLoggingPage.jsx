@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Plus, Sparkles, Calendar, Timer, CheckCircle, X } from 'lucide-react';
+import { Clock, Plus, Calendar, Timer, CheckCircle, X } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import { workLogApi } from '../../api/workLogApi';
@@ -114,7 +114,6 @@ const TimeLoggingPage = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 Time Logging
-                                <Sparkles className="w-5 h-5 text-yellow-300" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Track and manage time spent on tasks</p>
                         </div>

@@ -46,7 +46,6 @@ const ProtectedRoute = ({ children, allowedRoles = [], redirectTo }) => {
             'Team Lead': '/teamlead/dashboard',
             'TeamLead': '/teamlead/dashboard',
             'Employee': '/employee/dashboard',
-            'HR': '/hr/dashboard',
         };
 
         const redirectPath = redirectTo || roleRedirects[userRole] || '/employee/dashboard';

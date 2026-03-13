@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import api from '../api/axiosInstance';
 
 const NotificationContext = createContext(null);
 
@@ -18,7 +19,7 @@ const notificationReducer = (state, action) => {
       return {
         ...state,
         notifications: state.notifications.map((n) =>
-          n.notificationId === action.payload ? { ...n, isRead: true } : n
+          n.id === action.payload ? { ...n, isRead: true } : n
         ),
         unreadCount: Math.max(0, state.unreadCount - 1),
       };
@@ -38,26 +39,57 @@ const notificationReducer = (state, action) => {
 export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
-  const setNotifications = useCallback((notifications) => {
-    dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await api.get('/api/notifications?limit=10');
+      dispatch({ type: 'SET_NOTIFICATIONS', payload: res.data });
+    } catch {
+      // silently fail
+    }
   }, []);
 
-  const setUnreadCount = useCallback((count) => {
-    dispatch({ type: 'SET_UNREAD_COUNT', payload: count });
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await api.get('/api/notifications/unread-count');
+      dispatch({ type: 'SET_UNREAD_COUNT', payload: res.data.count });
+    } catch {
+      // silently fail
+    }
   }, []);
 
-  const markAsRead = useCallback((id) => {
-    dispatch({ type: 'MARK_AS_READ', payload: id });
+  const markAsRead = useCallback(async (id) => {
+    try {
+      await api.patch(`/api/notifications/${id}/read`);
+      dispatch({ type: 'MARK_AS_READ', payload: id });
+    } catch {
+      // silently fail
+    }
   }, []);
 
-  const markAllRead = useCallback(() => {
-    dispatch({ type: 'MARK_ALL_READ' });
+  const markAllRead = useCallback(async () => {
+    try {
+      await api.patch('/api/notifications/read-all');
+      dispatch({ type: 'MARK_ALL_READ' });
+    } catch {
+      // silently fail
+    }
   }, []);
+
+  // Poll for unread count every 30 seconds
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   const value = {
     ...state,
-    setNotifications,
-    setUnreadCount,
+    fetchNotifications,
+    fetchUnreadCount,
     markAsRead,
     markAllRead,
   };

@@ -19,8 +19,8 @@ public class UsersController : ControllerBase
         _db = db;
     }
 
-    // Admin and HR can view all users
-    [Authorize(Roles = "Admin,HR")]
+    // Admin can view all users
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] string? role, [FromQuery] string? status)
     {
@@ -39,8 +39,19 @@ public class UsersController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            bool isActive = status.Equals("active", StringComparison.OrdinalIgnoreCase);
-            query = query.Where(u => u.IsActive == isActive);
+            if (status.Equals("unallocated", StringComparison.OrdinalIgnoreCase))
+            {
+                // Only Employee-role users with no manager assigned
+                query = query.Where(u =>
+                    u.ManagerId == null
+                    && u.IsActive
+                    && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"));
+            }
+            else
+            {
+                bool isActive = status.Equals("active", StringComparison.OrdinalIgnoreCase);
+                query = query.Where(u => u.IsActive == isActive);
+            }
         }
 
         var result = await query.OrderBy(u => u.FirstName)
@@ -60,8 +71,8 @@ public class UsersController : ControllerBase
         return Ok(result);
     }
 
-    // Admin and HR can view any user
-    [Authorize(Roles = "Admin,HR")]
+    // Admin can view any user
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -83,8 +94,8 @@ public class UsersController : ControllerBase
         });
     }
 
-    // Only Admin and HR can create users
-    [Authorize(Roles = "Admin,HR")]
+    // Only Admin can create users
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
     {
@@ -131,8 +142,8 @@ public class UsersController : ControllerBase
         });
     }
 
-    // Only Admin and HR can update users
-    [Authorize(Roles = "Admin,HR")]
+    // Only Admin can update users
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request)
     {
@@ -244,7 +255,8 @@ public class UsersController : ControllerBase
 
         var employees = await _db.Users
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .Where(u => u.ManagerId == currentUserId && u.IsActive)
+            .Where(u => u.ManagerId == currentUserId && u.IsActive
+                        && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee" || ur.Role.RoleName == "TeamLead"))
             .OrderBy(u => u.FirstName)
             .ToListAsync();
 
@@ -261,6 +273,53 @@ public class UsersController : ControllerBase
         }).ToList();
 
         return Ok(result);
+    }
+
+    // Manager can view employees (Employee role only) in their managed teams
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpGet("employees")]
+    public async Task<IActionResult> GetEmployeesInMyTeams()
+    {
+        var userIdClaim = User.FindFirst("UserId")?.Value
+                          ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var currentUserId))
+            return Unauthorized();
+
+        var managerTeamIds = await _db.Teams
+            .Where(t => t.ManagerId == currentUserId && t.IsActive)
+            .Select(t => t.TeamId)
+            .ToListAsync();
+
+        if (!managerTeamIds.Any())
+            return Ok(new List<object>());
+
+        var employeeUserIds = await _db.Set<TeamMember>()
+            .Where(tm => managerTeamIds.Contains(tm.TeamId))
+            .Select(tm => tm.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        var employees = await _db.Users
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => employeeUserIds.Contains(u.UserId)
+                        && u.IsActive
+                        && u.UserId != currentUserId
+                        && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
+            .OrderBy(u => u.FirstName)
+            .Select(u => new UserDto
+            {
+                Id = u.UserId,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                Roles = u.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
+                IsActive = u.IsActive,
+                CreatedDate = u.CreatedDate,
+                ManagerId = u.ManagerId
+            })
+            .ToListAsync();
+
+        return Ok(employees);
     }
 
     // Any authenticated user can view their own profile
@@ -363,10 +422,9 @@ public class UsersController : ControllerBase
 
             // ── Role-Specific Data ────────────────────────────
             bool isAdmin = roles.Contains("Admin");
-            bool isHR = roles.Contains("HR");
             bool isManager = roles.Contains("Manager");
             bool isTeamLead = roles.Contains("TeamLead") || roles.Contains("Team Lead");
-            bool isEmployee = !isAdmin && !isHR && !isManager && !isTeamLead;
+            bool isEmployee = !isAdmin && !isManager && !isTeamLead;
 
             // ─────────────────────────────────────────────────
             // ADMIN → Full system-wide overview + team perf
@@ -386,26 +444,6 @@ public class UsersController : ControllerBase
                 {
                     await PopulateTeamPerformance(profile, managedTeamIds);
                 }
-            }
-
-            // ─────────────────────────────────────────────────
-            // HR → Org health & workforce analytics
-            // ─────────────────────────────────────────────────
-            if (isHR)
-            {
-                profile.AllUsersCount = await _db.Users.CountAsync();
-                profile.ActiveUsersCount = await _db.Users.CountAsync(u => u.IsActive);
-                profile.InactiveUsersCount = await _db.Users.CountAsync(u => !u.IsActive);
-                profile.AllTeamsCount = await _db.Teams.CountAsync(t => t.IsActive);
-                profile.AllTasksCount = await _db.Tasks.CountAsync();
-                profile.TotalCompletedTasksOrg = await _db.Tasks.CountAsync(t => t.Status == 3);
-
-                // New hires this month
-                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-                profile.NewHiresThisMonth = await _db.Users.CountAsync(u => u.CreatedDate >= monthStart);
-
-                // Department count (distinct active teams)
-                profile.DepartmentCount = await _db.Teams.CountAsync(t => t.IsActive);
             }
 
             // ─────────────────────────────────────────────────

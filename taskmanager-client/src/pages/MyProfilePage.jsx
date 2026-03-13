@@ -4,7 +4,7 @@ import {
     User, Mail, Calendar, Shield, Users, ClipboardList, Clock, TrendingUp,
     CheckCircle2, Timer, Briefcase, ChevronRight, Loader2, Building2, Crown,
     UserCheck, BarChart3, Settings, Phone, Globe, Hash, Edit3, ArrowRight,
-    Camera, Heart, BookOpen, Sparkles, Save, X, Plus
+    Camera, Heart, BookOpen, Save, X, Plus
 } from 'lucide-react';
 import { userApi } from '../api/userApi';
 import { useAuthContext } from '../context/AuthContext';
@@ -178,7 +178,6 @@ const MyProfilePage = () => {
     const defaultBio = (role) => {
         if (role === 'Admin') return 'System administrator at CogniStruct managing platform operations, user access, and organizational oversight.';
         if (role === 'Manager') return 'Project manager overseeing team operations and driving productivity.';
-        if (role === 'HR') return 'HR professional responsible for employee management and workforce analytics.';
         if (role === 'TeamLead' || role === 'Team Lead') return 'Team lead guiding a talented group of professionals towards project goals.';
         return 'Dedicated professional contributing to team objectives through consistent task execution and collaboration.';
     };
@@ -324,7 +323,7 @@ const MyProfilePage = () => {
     });
     const fullName = `${profile.firstName} ${profile.lastName}`;
 
-    const roleTitles = { Admin: 'System Administrator', Manager: 'Project Manager', TeamLead: 'Team Lead', 'Team Lead': 'Team Lead', Employee: 'Software Engineer', HR: 'HR Executive' };
+    const roleTitles = { Admin: 'System Administrator', Manager: 'Project Manager', TeamLead: 'Team Lead', 'Team Lead': 'Team Lead', Employee: 'Software Engineer' };
     const jobTitle = roleTitles[primaryRole] || 'Employee';
 
     const roleGradients = {
@@ -333,9 +332,8 @@ const MyProfilePage = () => {
         TeamLead: 'from-cyan-600 via-teal-600 to-emerald-500',
         'Team Lead': 'from-cyan-600 via-teal-600 to-emerald-500',
         Employee: 'from-indigo-600 via-purple-600 to-pink-500',
-        HR: 'from-amber-500 via-orange-500 to-rose-500',
     };
-    const roleIcons = { Admin: Crown, Manager: Briefcase, TeamLead: Users, 'Team Lead': Users, Employee: User, HR: UserCheck };
+    const roleIcons = { Admin: Crown, Manager: Briefcase, TeamLead: Users, 'Team Lead': Users, Employee: User };
     const headerGradient = roleGradients[primaryRole] || roleGradients.Employee;
     const RoleIcon = roleIcons[primaryRole] || User;
 
@@ -492,7 +490,6 @@ const MyProfilePage = () => {
                         {/* Interests & hobbies */}
                         <Card>
                             <SectionHeader
-                                icon={Sparkles}
                                 title="My interests and hobbies"
                                 gradient="from-amber-500 to-orange-600"
                                 action={editingSection === 'interests'
@@ -512,14 +509,13 @@ const MyProfilePage = () => {
                             </div>
                         </Card>
 
-                        {/* Role-specific stats overview (Admin, HR, Manager, TeamLead only) */}
+                        {/* Role-specific stats overview (Admin, Manager, TeamLead only) */}
                         {primaryRole !== 'Employee' && (
                             <Card>
                                 <SectionHeader
                                     icon={BarChart3}
                                     title={primaryRole === 'Admin' ? 'System Overview'
-                                        : primaryRole === 'HR' ? 'Org Health'
-                                            : 'Team Performance'}
+                                        : 'Team Performance'}
                                     gradient="from-emerald-500 to-emerald-600"
                                 />
                                 <div className="p-6">
@@ -533,28 +529,6 @@ const MyProfilePage = () => {
                                                 { label: 'Teams', value: profile.allTeamsCount, icon: Building2, color: 'bg-blue-50 text-blue-600' },
                                                 { label: 'All Tasks', value: profile.allTasksCount, icon: ClipboardList, color: 'bg-amber-50 text-amber-600' },
                                                 { label: 'Completed', value: profile.totalCompletedTasksOrg, icon: CheckCircle2, color: 'bg-teal-50 text-teal-600' },
-                                            ].map((s) => (
-                                                <div key={s.label} className="text-center rounded-xl border border-slate-200 p-4 hover:shadow-sm transition-shadow">
-                                                    <div className={`w-9 h-9 rounded-lg ${s.color.split(' ')[0]} flex items-center justify-center mx-auto mb-2`}>
-                                                        <s.icon className={`w-4 h-4 ${s.color.split(' ')[1]}`} />
-                                                    </div>
-                                                    <p className="text-xl font-bold text-slate-900">{s.value ?? 0}</p>
-                                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">{s.label}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* ── HR stats ── */}
-                                    {primaryRole === 'HR' && (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                                            {[
-                                                { label: 'Total Employees', value: profile.allUsersCount, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
-                                                { label: 'Active', value: profile.activeUsersCount, icon: UserCheck, color: 'bg-emerald-50 text-emerald-600' },
-                                                { label: 'Inactive', value: profile.inactiveUsersCount, icon: User, color: 'bg-red-50 text-red-600' },
-                                                { label: 'New Hires', value: profile.newHiresThisMonth, icon: Sparkles, color: 'bg-violet-50 text-violet-600' },
-                                                { label: 'Departments', value: profile.departmentCount, icon: Building2, color: 'bg-blue-50 text-blue-600' },
-                                                { label: 'Tasks Done', value: profile.totalCompletedTasksOrg, icon: CheckCircle2, color: 'bg-teal-50 text-teal-600' },
                                             ].map((s) => (
                                                 <div key={s.label} className="text-center rounded-xl border border-slate-200 p-4 hover:shadow-sm transition-shadow">
                                                     <div className={`w-9 h-9 rounded-lg ${s.color.split(' ')[0]} flex items-center justify-center mx-auto mb-2`}>
@@ -617,7 +591,6 @@ const MyProfilePage = () => {
                         {primaryRole === 'Employee' && (
                             <Card>
                                 <SectionHeader
-                                    icon={Sparkles}
                                     title="My Skills"
                                     gradient="from-violet-500 to-purple-600"
                                 />

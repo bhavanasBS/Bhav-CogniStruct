@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Server, Sparkles, Database, Cpu, HardDrive, Wifi,
+    Server, Database, Cpu, HardDrive, Wifi,
     CheckCircle, AlertTriangle, XCircle, Activity, RefreshCw, Clock
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -93,7 +93,6 @@ const SystemHealthPage = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 System Health
-                                <Sparkles className="w-5 h-5 text-amber-300" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">All systems operational</p>
                         </div>

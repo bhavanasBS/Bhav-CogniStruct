@@ -15,7 +15,6 @@ import {
   Loader2,
   Settings,
   BarChart3,
-  Sparkles,
 } from 'lucide-react';
 import { useAuthContext } from '../context/AuthContext';
 import Card from '../components/common/Card';
@@ -124,7 +123,7 @@ const DashboardPage = () => {
     'Team Lead': '#8b5cf6',
     'TeamLead': '#8b5cf6',
     'Employee': '#10b981',
-    'HR': '#ec4899',
+
     'Unassigned': '#94a3b8',
   };
 
@@ -183,19 +182,32 @@ const DashboardPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {greeting}, {user.firstName}
-          </h1>
-          <p className="text-slate-500 mt-1">System administration overview for your organization.</p>
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 rounded-2xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-white/5 rounded-full blur-lg" />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-medium text-slate-700">
-              {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <BarChart3 className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                {greeting}, {user.firstName}
+              </h1>
+              <p className="text-white/80 text-sm mt-0.5">System administration overview for your organization</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20">
+              <Calendar className="w-4 h-4 text-white/70" />
+              <span className="text-sm font-medium text-white/90">
+                {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -325,7 +337,7 @@ const DashboardPage = () => {
 
           {/* Team Overview */}
           <Card>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">Team Overview</h3>
                 <p className="text-sm text-slate-500">{teams.length} teams across the organization</p>
@@ -343,25 +355,82 @@ const DashboardPage = () => {
                 <p>No teams created yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {teams.slice(0, 6).map((team) => (
-                  <div
-                    key={team.teamId || team.id}
-                    className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer"
-                    onClick={() => navigate(`/teams/${team.teamId || team.id}`)}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                      {(team.name || 'T')[0].toUpperCase()}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {teams.slice(0, 6).map((team, idx) => {
+                  const gradients = [
+                    'from-indigo-500 via-indigo-600 to-purple-700',
+                    'from-emerald-500 via-teal-600 to-cyan-700',
+                    'from-rose-500 via-pink-600 to-fuchsia-700',
+                    'from-amber-500 via-orange-600 to-red-600',
+                    'from-violet-500 via-purple-600 to-indigo-700',
+                    'from-sky-500 via-blue-600 to-indigo-700',
+                  ];
+                  const bgGradient = gradients[idx % gradients.length];
+                  const memberCount = team.memberCount || team.members?.length || 0;
+                  const managerName = team.managerName || team.manager?.name || null;
+
+                  return (
+                    <div
+                      key={team.teamId || team.id}
+                      className="group relative rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all duration-300 cursor-pointer"
+                      onClick={() => navigate(`/teams/${team.teamId || team.id}`)}
+                    >
+                      {/* Gradient Header */}
+                      <div className={`bg-gradient-to-r ${bgGradient} px-4 py-3 relative overflow-hidden`}>
+                        <div className="absolute inset-0 overflow-hidden">
+                          <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
+                          <div className="absolute -bottom-2 -left-2 w-10 h-10 bg-white/10 rounded-full blur-md" />
+                        </div>
+                        <div className="relative z-10 flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                              <UsersRound className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-white truncate max-w-[140px]">
+                                {team.name || team.teamName || 'Unnamed Team'}
+                              </h4>
+                              {team.description && (
+                                <p className="text-[10px] text-white/70 truncate max-w-[140px]">{team.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="px-4 py-3 bg-white space-y-2.5">
+                        {/* Manager */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0">
+                            <UserCheck className="w-3 h-3 text-slate-500" />
+                          </div>
+                          <span className="text-xs text-slate-500">
+                            {managerName ? (
+                              <>Led by <span className="font-semibold text-slate-700">{managerName}</span></>
+                            ) : (
+                              <span className="text-slate-400 italic">No manager assigned</span>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Stats Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg">
+                            <Users className="w-3 h-3 text-slate-500" />
+                            <span className="text-xs font-semibold text-slate-700">{memberCount}</span>
+                            <span className="text-[10px] text-slate-400">members</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-medium text-emerald-600">Active</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{team.name}</p>
-                      <p className="text-xs text-slate-400">
-                        {team.memberCount || team.members?.length || 0} members
-                      </p>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-slate-300" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

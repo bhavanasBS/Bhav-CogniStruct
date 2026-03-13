@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Download, Users, Sparkles, UserPlus, Activity, X, Loader2, UserCog } from 'lucide-react';
+import { Plus, Download, Users, UserPlus, Activity, X, Loader2, UserCog, UserX } from 'lucide-react';
 import Button from '../../components/common/Button';
 import SearchBar from '../../components/common/SearchBar';
 import Pagination from '../../components/common/Pagination';
@@ -32,7 +32,7 @@ const UserManagement = () => {
         page,
         pageSize: 10,
         search: search || undefined,
-        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+        status: statusFilter === 'all' ? undefined : statusFilter,
       };
       const response = await userApi.getAll(params);
       setUsers(response.data.items || response.data || []);
@@ -120,6 +120,7 @@ const UserManagement = () => {
   // Stats
   const activeUsers = users.filter(u => u.isActive).length;
   const inactiveUsers = users.filter(u => !u.isActive).length;
+  const unallocatedUsers = users.filter(u => u.isActive && !u.managerId && u.roles?.some(r => r === 'Employee')).length;
 
   return (
     <div className="space-y-6">
@@ -137,7 +138,6 @@ const UserManagement = () => {
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 User Management
-                <Sparkles className="w-5 h-5 text-amber-300" />
               </h1>
               <p className="text-white/80 text-sm mt-0.5">Manage team members, roles, and access permissions</p>
             </div>
@@ -162,7 +162,7 @@ const UserManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -196,6 +196,17 @@ const UserManagement = () => {
             </div>
           </div>
         </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+              <UserX className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-800">{unallocatedUsers}</p>
+              <p className="text-xs text-slate-500">Unallocated</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -207,18 +218,23 @@ const UserManagement = () => {
             className="flex-1 max-w-md"
           />
           <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-            {['all', 'active', 'inactive'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all cursor-pointer ${statusFilter === status
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-                  }`}
-              >
-                {status}
-              </button>
-            ))}
+            {['all', 'active', 'inactive', 'unallocated'].map((status) => {
+              const labels = { all: 'All', active: 'Active', inactive: 'Inactive', unallocated: 'Unallocated' };
+              return (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${statusFilter === status
+                    ? status === 'unallocated'
+                      ? 'bg-white text-amber-700 shadow-sm'
+                      : 'bg-white text-purple-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  {labels[status]}
+                </button>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
             <Users className="h-4 w-4" />

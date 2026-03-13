@@ -19,7 +19,7 @@ import EmployeeInsightsPage from '../pages/admin/EmployeeInsightsPage';
 // Teams
 import TeamsPage from '../pages/teams/TeamsPage';
 import TeamDetailPage from '../pages/teams/TeamDetailPage';
-import TeamsHierarchyPage from '../pages/teams/TeamsHierarchyPage';
+
 
 // Tasks
 import TasksPage from '../pages/tasks/TasksPage';
@@ -40,13 +40,13 @@ import ManagerDashboard from '../pages/manager/ManagerDashboard';
 import ManagerProjectsPage from '../pages/manager/ManagerProjectsPage';
 import MyTeamPage from '../pages/manager/MyTeamPage';
 import ApprovalQueue from '../pages/manager/ApprovalQueue';
-import TeamPulse from '../pages/manager/TeamPulse';
 import ManagerTimeLogsPage from '../pages/manager/ManagerTimeLogsPage';
+import ManagerReviewPage from '../pages/manager/ManagerReviewPage';
+import ManagerProjectDetailPage from '../pages/manager/ManagerProjectDetailPage';
 
 // Team Lead
 import TeamLeadDashboard from '../pages/teamlead/TeamLeadDashboard';
 import TeamLeadTimeLogsPage from '../pages/teamlead/TeamLeadTimeLogsPage';
-import TeamDailyUpdatesPage from '../pages/teamlead/TeamDailyUpdatesPage';
 import TeamLeadTeamPage from '../pages/teamlead/TeamLeadTeamPage';
 import MyProjectsPage from '../pages/teamlead/MyProjectsPage';
 import ProjectDetailPage from '../pages/teamlead/ProjectDetailPage';
@@ -55,20 +55,11 @@ import PauseRequestsPage from '../pages/teamlead/PauseRequestsPage';
 // Employee
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard';
 import MyTasksPage from '../pages/employee/MyTasksPage';
-import DailyGoalsPage from '../pages/employee/DailyGoalsPage';
 import SkillProgressPage from '../pages/employee/SkillProgressPage';
-import PeerRecognitionPage from '../pages/employee/PeerRecognitionPage';
-import WeeklyReflectionPage from '../pages/employee/WeeklyReflectionPage';
+import EmployeeReviewsPage from '../pages/employee/EmployeeReviewsPage';
+import EmployeeProgressPage from '../pages/employee/EmployeeProgressPage';
 
-// HR
-import HRDashboard from '../pages/hr/HRDashboard';
-import HREmployeesPage from '../pages/hr/HREmployeesPage';
-import HRAnalyticsPage from '../pages/hr/HRAnalyticsPage';
-import HRTeamsPage from '../pages/hr/HRTeamsPage';
-import HRTimeLogsPage from '../pages/hr/HRTimeLogsPage';
 
-// Gamification
-import LeaderboardPage from '../pages/LeaderboardPage';
 
 
 // Profile
@@ -124,17 +115,13 @@ const AppRoutes = () => {
 
         {/* ─── Teams (Admin, Manager, TeamLead, HR) ──── */}
         <Route path="/teams" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead', 'HR']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
             <TeamsPage />
           </ProtectedRoute>
         } />
-        <Route path="/teams/hierarchy" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead', 'HR']}>
-            <TeamsHierarchyPage />
-          </ProtectedRoute>
-        } />
+
         <Route path="/teams/:id" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead', 'HR']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
             <TeamDetailPage />
           </ProtectedRoute>
         } />
@@ -146,14 +133,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/tasks/:id" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead', 'Employee']}>
             <TaskDetailPage />
           </ProtectedRoute>
         } />
 
-        {/* ─── Analytics (Admin, Manager, HR) ────────── */}
+        {/* ─── Analytics (Admin, Manager) ────────── */}
         <Route path="/analytics" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'HR']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <AnalyticsDashboard />
           </ProtectedRoute>
         } />
@@ -179,6 +166,11 @@ const AppRoutes = () => {
         <Route path="/manager/projects" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <ManagerProjectsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/projects/:id" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <ManagerProjectDetailPage />
           </ProtectedRoute>
         } />
 
@@ -223,11 +215,6 @@ const AppRoutes = () => {
             <PauseRequestsPage />
           </ProtectedRoute>
         } />
-        <Route path="/teamlead/daily-updates" element={
-          <ProtectedRoute allowedRoles={['TeamLead', 'Team Lead']}>
-            <TeamDailyUpdatesPage />
-          </ProtectedRoute>
-        } />
         <Route path="/manager/team" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <MyTeamPage />
@@ -243,11 +230,6 @@ const AppRoutes = () => {
             <ApprovalQueue />
           </ProtectedRoute>
         } />
-        <Route path="/manager/pulse" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'Team Lead']}>
-            <TeamPulse />
-          </ProtectedRoute>
-        } />
         <Route path="/manager/time-logs" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <ManagerTimeLogsPage />
@@ -256,6 +238,11 @@ const AppRoutes = () => {
         <Route path="/manager/analytics" element={
           <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
             <AnalyticsDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/manager/reviews" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <ManagerReviewPage />
           </ProtectedRoute>
         } />
 
@@ -270,12 +257,6 @@ const AppRoutes = () => {
             <MyTasksPage />
           </ProtectedRoute>
         } />
-
-        <Route path="/employee/goals" element={
-          <ProtectedRoute>
-            <DailyGoalsPage />
-          </ProtectedRoute>
-        } />
         <Route path="/employee/time-logs" element={
           <ProtectedRoute>
             <TimeLoggingPage />
@@ -286,47 +267,14 @@ const AppRoutes = () => {
             <SkillProgressPage />
           </ProtectedRoute>
         } />
-        <Route path="/employee/recognition" element={
+        <Route path="/employee/reviews" element={
           <ProtectedRoute>
-            <PeerRecognitionPage />
+            <EmployeeReviewsPage />
           </ProtectedRoute>
         } />
-        <Route path="/employee/reflection" element={
+        <Route path="/employee/progress" element={
           <ProtectedRoute>
-            <WeeklyReflectionPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/employee/leaderboard" element={
-          <ProtectedRoute>
-            <LeaderboardPage />
-          </ProtectedRoute>
-        } />
-
-
-        {/* ─── HR Routes ─────────────────────────────── */}
-        <Route path="/hr/dashboard" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
-            <HRDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/hr/employees" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
-            <HREmployeesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/hr/teams" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
-            <HRTeamsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/hr/time-logs" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
-            <HRTimeLogsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/hr/analytics" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
-            <HRAnalyticsPage />
+            <EmployeeProgressPage />
           </ProtectedRoute>
         } />
 
@@ -334,11 +282,6 @@ const AppRoutes = () => {
         <Route path="/time-logs" element={
           <ProtectedRoute>
             <TimeLoggingPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/leaderboard" element={
-          <ProtectedRoute>
-            <LeaderboardPage />
           </ProtectedRoute>
         } />
 
@@ -360,11 +303,6 @@ const AppRoutes = () => {
         } />
         <Route path="/employee/profile" element={
           <ProtectedRoute>
-            <MyProfilePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/hr/profile" element={
-          <ProtectedRoute allowedRoles={['Admin', 'HR']}>
             <MyProfilePage />
           </ProtectedRoute>
         } />

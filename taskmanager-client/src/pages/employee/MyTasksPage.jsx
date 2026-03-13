@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    CheckSquare, Sparkles, Filter, Search, Clock,
+    CheckSquare, Filter, Search, Clock,
     AlertCircle, CheckCircle, Loader2, ArrowUpRight
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -13,7 +13,8 @@ import toast from 'react-hot-toast';
 
 const MyTasksPage = () => {
     const authCtx = useAuthContext();
-    const user = authCtx?.user || { firstName: 'Employee', userId: 1 };
+    const user = authCtx?.user || { firstName: 'Employee' };
+    const currentUserId = user.userId || user.id;
     const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -24,11 +25,11 @@ const MyTasksPage = () => {
     const fetchTasks = async () => {
         try {
             setIsLoading(true);
-            const res = await taskApi.getAll({ assigneeId: user.userId });
+            const res = await taskApi.getAll({ assigneeId: currentUserId });
             const allTasks = res.data?.items || res.data || [];
             // Filter for my tasks
             const myTasks = allTasks.filter(t =>
-                t.assigneeId === user.userId ||
+                t.assigneeId === currentUserId ||
                 t.assigneeName?.toLowerCase().includes(user.firstName?.toLowerCase())
             );
             setTasks(myTasks);
@@ -58,9 +59,12 @@ const MyTasksPage = () => {
     const getStatusColor = (status) => {
         switch (status) {
             case 0: return 'bg-slate-100 text-slate-600 border-slate-200';
-            case 1: return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 2: case 3: return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 1: return 'bg-sky-100 text-sky-700 border-sky-200';
+            case 2: return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 3: return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 4: return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 5: return 'bg-red-100 text-red-700 border-red-200';
+            case 6: return 'bg-gray-100 text-gray-500 border-gray-200';
             default: return 'bg-slate-100 text-slate-600 border-slate-200';
         }
     };
@@ -68,9 +72,12 @@ const MyTasksPage = () => {
     const getStatusLabel = (status) => {
         switch (status) {
             case 0: return 'Pending';
-            case 1: return 'In Progress';
-            case 2: case 3: return 'Completed';
+            case 1: return 'Assigned';
+            case 2: return 'In Progress';
+            case 3: return 'Completed';
             case 4: return 'Paused';
+            case 5: return 'Blocked';
+            case 6: return 'Cancelled';
             default: return 'Unknown';
         }
     };
@@ -97,17 +104,17 @@ const MyTasksPage = () => {
         const matchesSearch = task.title?.toLowerCase().includes(search.toLowerCase()) ||
             task.description?.toLowerCase().includes(search.toLowerCase());
         const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'pending' && task.status === 0) ||
-            (statusFilter === 'progress' && task.status === 1) ||
-            (statusFilter === 'completed' && (task.status === 2 || task.status === 3));
+            (statusFilter === 'pending' && (task.status === 0 || task.status === 1)) ||
+            (statusFilter === 'progress' && task.status === 2) ||
+            (statusFilter === 'completed' && task.status === 3);
         return matchesSearch && matchesStatus;
     });
 
     const stats = {
         total: tasks.length,
-        pending: tasks.filter(t => t.status === 0).length,
-        inProgress: tasks.filter(t => t.status === 1).length,
-        completed: tasks.filter(t => t.status === 2 || t.status === 3).length,
+        pending: tasks.filter(t => t.status === 0 || t.status === 1).length,
+        inProgress: tasks.filter(t => t.status === 2).length,
+        completed: tasks.filter(t => t.status === 3).length,
     };
 
     return (
@@ -127,7 +134,6 @@ const MyTasksPage = () => {
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
                                 My Tasks
-                                <Sparkles className="w-5 h-5 text-amber-300" />
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">Manage your assigned tasks</p>
                         </div>
@@ -203,24 +209,24 @@ const MyTasksPage = () => {
                                     {/* Status checkbox */}
                                     <button
                                         onClick={() => {
-                                            if (task.status === 0) updateTaskStatus(task.id || task.taskId, 1);
-                                            else if (task.status === 1) updateTaskStatus(task.id || task.taskId, 2);
+                                            if (task.status === 0 || task.status === 1) updateTaskStatus(task.id || task.taskId, 2);
+                                            else if (task.status === 2) updateTaskStatus(task.id || task.taskId, 3);
                                         }}
-                                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${task.status === 2 || task.status === 3
+                                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${task.status === 3
                                             ? 'bg-emerald-500 border-emerald-500'
-                                            : task.status === 1
+                                            : task.status === 2
                                                 ? 'border-blue-400 bg-blue-50'
                                                 : 'border-slate-300 hover:border-indigo-400'
                                             }`}
                                     >
-                                        {(task.status === 2 || task.status === 3) && (
+                                        {task.status === 3 && (
                                             <CheckCircle className="w-4 h-4 text-white" />
                                         )}
                                     </button>
 
                                     {/* Task info */}
                                     <div className="flex-1">
-                                        <p className={`font-medium ${task.status === 2 || task.status === 3
+                                        <p className={`font-medium ${task.status === 3
                                             ? 'text-slate-400 line-through'
                                             : 'text-slate-800'
                                             }`}>

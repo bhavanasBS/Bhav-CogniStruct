@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, LayoutGrid, List, ClipboardList, Sparkles, CheckCircle, Clock, AlertTriangle, Target } from 'lucide-react';
+import { Plus, LayoutGrid, List, ClipboardList, CheckCircle, Clock, AlertTriangle, Target } from 'lucide-react';
 import Button from '../../components/common/Button';
 import SearchBar from '../../components/common/SearchBar';
 import TaskList from '../../components/tasks/TaskList';
@@ -72,7 +72,12 @@ const TasksPage = () => {
     if (!teamId) return;
     try {
       const membersRes = await teamApi.getMembers(teamId);
-      setEmployees((membersRes.data || []).map(m => ({
+      // Filter out Manager and Admin — only TeamLead and Employee can be assigned
+      const filtered = (membersRes.data || []).filter(m => {
+        const role = (m.role || '').toLowerCase();
+        return role !== 'manager' && role !== 'admin';
+      });
+      setEmployees(filtered.map(m => ({
         userId: m.userId,
         firstName: m.name?.split(' ')[0] || '',
         lastName: m.name?.split(' ').slice(1).join(' ') || '',
@@ -134,7 +139,6 @@ const TasksPage = () => {
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 Task Management
-                <Sparkles className="w-5 h-5 text-amber-300" />
               </h1>
               <p className="text-white/80 text-sm mt-0.5">Manage, track, and organize all your task assignments</p>
             </div>

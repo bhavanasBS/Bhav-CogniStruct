@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import CustomSelect from '../common/CustomSelect';
@@ -12,6 +12,15 @@ const TeamForm = ({ isOpen, onClose, onSubmit, team = null, managers = [], isLoa
     managerId: team?.managerId || '',
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    setForm({
+      teamName: team?.teamName || '',
+      description: team?.description || '',
+      managerId: team?.managerId || '',
+    });
+    setErrors({});
+  }, [team]);
 
   const handleChange = (field) => (e) => {
     setForm((p) => ({ ...p, [field]: e.target.value }));

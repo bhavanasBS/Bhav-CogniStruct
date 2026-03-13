@@ -22,6 +22,9 @@ public class TaskDto
     public string? PauseReason { get; set; }
     public string? RequiredSkills { get; set; }
     public double TotalLoggedHours { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public double? SlaHours { get; set; }
+    public bool SlaBreached { get; set; }
     // Hierarchy
     public int? ParentTaskId { get; set; }
     public int SubTaskCount { get; set; }
@@ -41,6 +44,7 @@ public class CreateTaskRequest
     public double EstimatedHours { get; set; }
     public string? RequiredSkills { get; set; }
     public int? ParentTaskId { get; set; }
+    public double? SlaHours { get; set; }
 }
 
 public class UpdateTaskRequest
@@ -54,6 +58,7 @@ public class UpdateTaskRequest
     public DateTime? Deadline { get; set; }
     public double? EstimatedHours { get; set; }
     public string? RequiredSkills { get; set; }
+    public double? SlaHours { get; set; }
 }
 
 public class UpdateTaskStatusRequest
@@ -63,5 +68,11 @@ public class UpdateTaskStatusRequest
 
 public class PauseTaskRequest
 {
+    public string? Reason { get; set; }
+}
+
+public class ReassignTaskRequest
+{
+    public int NewAssigneeId { get; set; }
     public string? Reason { get; set; }
 }

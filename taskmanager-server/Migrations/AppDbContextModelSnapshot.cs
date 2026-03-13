@@ -22,47 +22,51 @@ namespace TaskManager.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("TaskManager.API.Models.DailyUpdateStatus", b =>
+            modelBuilder.Entity("TaskManager.API.Models.EmployeeReview", b =>
                 {
-                    b.Property<int>("DailyUpdateId")
+                    b.Property<int>("ReviewId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DailyUpdateId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewId"));
 
-                    b.Property<DateTime?>("AcknowledgedAt")
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("AcknowledgedByUserId")
+                    b.Property<int>("EmployeeId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("ImprovementAreas")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool>("IsSent")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Summary")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
+                    b.Property<int>("ManagerId")
                         .HasColumnType("int");
 
-                    b.HasKey("DailyUpdateId");
+                    b.Property<int>("PerformanceScore")
+                        .HasColumnType("int");
 
-                    b.HasIndex("AcknowledgedByUserId");
+                    b.Property<string>("ReviewPeriod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.HasIndex("UserId", "UpdateDate")
+                    b.Property<string>("Strengths")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("ReviewId");
+
+                    b.HasIndex("ManagerId");
+
+                    b.HasIndex("EmployeeId", "ReviewPeriod")
                         .IsUnique();
 
-                    b.ToTable("DailyUpdateStatuses");
+                    b.ToTable("EmployeeReviews");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.Notification", b =>
@@ -84,6 +88,14 @@ namespace TaskManager.API.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -93,6 +105,8 @@ namespace TaskManager.API.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId", "CreatedDate");
 
                     b.HasIndex("UserId", "IsRead");
 
@@ -173,6 +187,83 @@ namespace TaskManager.API.Migrations
                     b.ToTable("Roles");
                 });
 
+            modelBuilder.Entity("TaskManager.API.Models.SkillUsage", b =>
+                {
+                    b.Property<int>("SkillUsageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillUsageId"));
+
+                    b.Property<bool>("CompletedSuccessfully")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Skill")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SkillUsageId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("SkillUsages");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskAttachment", b =>
+                {
+                    b.Property<int>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AttachmentId"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FileType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UploadedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("TaskAttachments");
+                });
+
             modelBuilder.Entity("TaskManager.API.Models.TaskAuditLog", b =>
                 {
                     b.Property<int>("AuditId")
@@ -206,6 +297,89 @@ namespace TaskManager.API.Migrations
                     b.HasIndex("TaskId");
 
                     b.ToTable("TaskAuditLogs");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskComment", b =>
+                {
+                    b.Property<int>("CommentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CommentId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TaskComments");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskFeedback", b =>
+                {
+                    b.Property<int>("FeedbackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FeedbackId"));
+
+                    b.Property<int>("CommunicationRating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Improvements")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double>("OverallRating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Strengths")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeamLeadId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimelinessRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkQualityRating")
+                        .HasColumnType("int");
+
+                    b.HasKey("FeedbackId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TaskId")
+                        .IsUnique();
+
+                    b.HasIndex("TeamLeadId");
+
+                    b.ToTable("TaskFeedbacks");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.TaskItem", b =>
@@ -255,6 +429,15 @@ namespace TaskManager.API.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<bool>("SlaBreached")
+                        .HasColumnType("bit");
+
+                    b.Property<double?>("SlaHours")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -274,6 +457,8 @@ namespace TaskManager.API.Migrations
                     b.HasIndex("AssigneeId");
 
                     b.HasIndex("AssignerId");
+
+                    b.HasIndex("Deadline");
 
                     b.HasIndex("ParentTaskId");
 
@@ -333,6 +518,47 @@ namespace TaskManager.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("TeamMembers");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TrainingRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReviewedById")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ReviewedById");
+
+                    b.ToTable("TrainingRequests");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.User", b =>
@@ -568,22 +794,23 @@ namespace TaskManager.API.Migrations
                     b.ToTable("WorkLogs");
                 });
 
-            modelBuilder.Entity("TaskManager.API.Models.DailyUpdateStatus", b =>
+            modelBuilder.Entity("TaskManager.API.Models.EmployeeReview", b =>
                 {
-                    b.HasOne("TaskManager.API.Models.User", "AcknowledgedBy")
+                    b.HasOne("TaskManager.API.Models.User", "Employee")
                         .WithMany()
-                        .HasForeignKey("AcknowledgedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("TaskManager.API.Models.User", "User")
-                        .WithMany("DailyUpdates")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AcknowledgedBy");
+                    b.HasOne("TaskManager.API.Models.User", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Employee");
+
+                    b.Navigation("Manager");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.Notification", b =>
@@ -631,6 +858,44 @@ namespace TaskManager.API.Migrations
                     b.Navigation("Task");
                 });
 
+            modelBuilder.Entity("TaskManager.API.Models.SkillUsage", b =>
+                {
+                    b.HasOne("TaskManager.API.Models.User", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.TaskItem", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskAttachment", b =>
+                {
+                    b.HasOne("TaskManager.API.Models.TaskItem", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+
+                    b.Navigation("UploadedBy");
+                });
+
             modelBuilder.Entity("TaskManager.API.Models.TaskAuditLog", b =>
                 {
                     b.HasOne("TaskManager.API.Models.User", "PerformedBy")
@@ -648,6 +913,52 @@ namespace TaskManager.API.Migrations
                     b.Navigation("PerformedBy");
 
                     b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskComment", b =>
+                {
+                    b.HasOne("TaskManager.API.Models.TaskItem", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TaskFeedback", b =>
+                {
+                    b.HasOne("TaskManager.API.Models.User", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.TaskItem", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.User", "TeamLead")
+                        .WithMany()
+                        .HasForeignKey("TeamLeadId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Task");
+
+                    b.Navigation("TeamLead");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.TaskItem", b =>
@@ -708,6 +1019,23 @@ namespace TaskManager.API.Migrations
                     b.Navigation("Team");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TaskManager.API.Models.TrainingRequest", b =>
+                {
+                    b.HasOne("TaskManager.API.Models.User", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskManager.API.Models.User", "ReviewedBy")
+                        .WithMany()
+                        .HasForeignKey("ReviewedById");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("ReviewedBy");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.User", b =>
@@ -792,8 +1120,6 @@ namespace TaskManager.API.Migrations
                     b.Navigation("AssignedTasks");
 
                     b.Navigation("CreatedTasks");
-
-                    b.Navigation("DailyUpdates");
 
                     b.Navigation("ManagedTeams");
 

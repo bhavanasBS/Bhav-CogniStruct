@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import {
-    TrendingUp, Heart, FileText, AlertTriangle, Clock,
-    Users, BookOpen, Target, Award, BarChart3,
-    Smile, Frown, Meh, CheckCircle, ArrowUp, ArrowDown
+    TrendingUp, AlertTriangle, Clock,
+    Target, BarChart3,
+    CheckCircle, ArrowUp, ArrowDown
 } from 'lucide-react';
-import { ANALYTICS_AGGREGATES, KUDOS_CATEGORIES } from '../../config/mockEmployeeFeatures';
+import { ANALYTICS_AGGREGATES } from '../../config/mockEmployeeFeatures';
 
 /**
  * Employee Insights Analytics Page
  * Shows aggregated data from Employee enhancement features:
  * - Skill gaps & training requests
- * - Recognition/Kudos analytics
- * - Team sentiment
  * - Blocker trends
  * - Time estimation accuracy
  */
@@ -22,8 +20,6 @@ const EmployeeInsightsPage = () => {
     const tabs = [
         { id: 'overview', label: 'Overview', icon: BarChart3 },
         { id: 'skills', label: 'Skills', icon: TrendingUp },
-        { id: 'recognition', label: 'Recognition', icon: Heart },
-        { id: 'sentiment', label: 'Sentiment', icon: Smile },
         { id: 'blockers', label: 'Blockers', icon: AlertTriangle },
         { id: 'estimation', label: 'Estimation', icon: Clock },
     ];
@@ -49,7 +45,7 @@ const EmployeeInsightsPage = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id
+                            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${activeTab === tab.id
                                     ? 'bg-indigo-600 text-white'
                                     : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
@@ -65,7 +61,7 @@ const EmployeeInsightsPage = () => {
             {activeTab === 'overview' && (
                 <div className="space-y-6">
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-amber-500/20 rounded-lg">
@@ -74,28 +70,6 @@ const EmployeeInsightsPage = () => {
                                 <div>
                                     <p className="text-sm text-gray-400">Avg Skill Rating</p>
                                     <p className="text-xl font-bold text-white">3.6</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-rose-500/20 rounded-lg">
-                                    <Heart className="w-5 h-5 text-rose-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-400">Kudos This Week</p>
-                                    <p className="text-xl font-bold text-white">{data.recognition.thisWeek}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500/20 rounded-lg">
-                                    <Smile className="w-5 h-5 text-emerald-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-400">Team Mood</p>
-                                    <p className="text-xl font-bold text-white">{data.sentiment.avgMood.toFixed(1)}/5</p>
                                 </div>
                             </div>
                         </div>
@@ -123,54 +97,23 @@ const EmployeeInsightsPage = () => {
                         </div>
                     </div>
 
-                    {/* Two Column Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Skill Gaps */}
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-violet-400" />
-                                Top Skill Gaps
-                            </h3>
-                            <div className="space-y-3">
-                                {data.skills.skillGaps.map((skill, idx) => (
-                                    <div key={idx} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-white">{skill.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-amber-400 text-sm">{skill.gapCount} employees</span>
-                                            <span className="text-gray-500">|</span>
-                                            <span className="text-gray-400 text-sm">Avg: {skill.avgRating.toFixed(1)}</span>
-                                        </div>
+                    {/* Skill Gaps */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-violet-400" />
+                            Top Skill Gaps
+                        </h3>
+                        <div className="space-y-3">
+                            {data.skills.skillGaps.map((skill, idx) => (
+                                <div key={idx} className="flex items-center justify-between">
+                                    <span className="text-white">{skill.name}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-amber-400 text-sm">{skill.gapCount} employees</span>
+                                        <span className="text-gray-500">|</span>
+                                        <span className="text-gray-400 text-sm">Avg: {skill.avgRating.toFixed(1)}</span>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Top Kudos Receivers */}
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-amber-400" />
-                                Top Recognition Recipients
-                            </h3>
-                            <div className="space-y-3">
-                                {data.recognition.topReceivers.map((person, idx) => (
-                                    <div key={idx} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-amber-500 text-black' : 'bg-white/10 text-gray-400'
-                                                }`}>
-                                                {idx + 1}
-                                            </span>
-                                            <span className="text-white">{person.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-rose-400 text-sm">{person.count} kudos</span>
-                                            <span className="text-gray-500">|</span>
-                                            <span className="text-amber-400 text-sm">{person.points} pts</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -248,109 +191,6 @@ const EmployeeInsightsPage = () => {
                                     <p className="text-sm text-gray-500 mt-1">
                                         Average rating: {skill.avgRating.toFixed(1)}/5
                                     </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Recognition Tab */}
-            {activeTab === 'recognition' && (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Heart className="w-5 h-5 text-rose-400" />
-                                <span className="text-gray-400">Total Kudos</span>
-                            </div>
-                            <p className="text-3xl font-bold text-white">{data.recognition.totalKudos}</p>
-                            <p className="text-sm text-emerald-400 flex items-center gap-1 mt-1">
-                                <ArrowUp className="w-4 h-4" /> {data.recognition.thisWeek} this week
-                            </p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5 col-span-2">
-                            <h3 className="text-sm text-gray-400 mb-3">By Category</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {Object.entries(data.recognition.byCategory).map(([cat, count]) => {
-                                    const catInfo = KUDOS_CATEGORIES.find(c => c.id === cat);
-                                    return (
-                                        <div key={cat} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
-                                            <span className="text-lg">{catInfo?.icon}</span>
-                                            <span className="text-white">{count}</span>
-                                            <span className="text-gray-400 text-sm capitalize">{cat}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-lg font-semibold text-white mb-4">Top Givers</h3>
-                            {data.recognition.topGivers.map((person, idx) => (
-                                <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                                    <span className="text-white">{person.name}</span>
-                                    <span className="text-blue-400">{person.count} kudos sent</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-lg font-semibold text-white mb-4">Top Receivers</h3>
-                            {data.recognition.topReceivers.map((person, idx) => (
-                                <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                                    <span className="text-white">{person.name}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-rose-400">{person.count} received</span>
-                                        <span className="text-amber-400 text-sm">({person.points} pts)</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Sentiment Tab */}
-            {activeTab === 'sentiment' && (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                            <div className="flex items-center gap-3">
-                                <Smile className="w-8 h-8 text-emerald-400" />
-                                <div>
-                                    <p className="text-sm text-gray-400">Average Mood</p>
-                                    <p className="text-2xl font-bold text-white">{data.sentiment.avgMood.toFixed(1)}/5</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-5 col-span-3">
-                            <h3 className="text-sm text-gray-400 mb-3">Mood Trend (Last 4 Weeks)</h3>
-                            <div className="flex items-end gap-4 h-20">
-                                {data.sentiment.trend.map((week, idx) => (
-                                    <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                                        <div
-                                            className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t"
-                                            style={{ height: `${(week.mood / 5) * 100}%` }}
-                                        />
-                                        <span className="text-xs text-gray-400">{week.week}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-amber-400" />
-                            Top Challenges Reported
-                        </h3>
-                        <div className="space-y-2">
-                            {data.sentiment.topChallenges.map((challenge, idx) => (
-                                <div key={idx} className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-lg">
-                                    <span className="text-amber-400 font-bold">{idx + 1}.</span>
-                                    <span className="text-white">{challenge}</span>
                                 </div>
                             ))}
                         </div>

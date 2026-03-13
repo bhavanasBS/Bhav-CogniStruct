@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Scale, Sparkles, Users, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
+import { Scale, Users, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import { workloadApi } from '../../api/workloadApi';
 import toast from 'react-hot-toast';
@@ -11,9 +11,9 @@ const WorkloadPage = () => {
     const fetchWorkload = async () => {
         try {
             setIsLoading(true);
-            // Fetch workload for a team (using placeholder teamId - will need context)
-            const response = await workloadApi.getByTeam('all');
-            setMembers(response.data.items || response.data || []);
+            // Fetch workload for all employees
+            const response = await workloadApi.getAll();
+            setMembers(response.data || []);
         } catch (error) {
             console.error('Failed to fetch workload:', error);
             toast.error('Failed to load workload data');
@@ -40,7 +40,9 @@ const WorkloadPage = () => {
     };
 
     const overloaded = members.filter(m => {
-        const percent = ((m.currentHours || m.hours || 0) / (m.capacity || 40)) * 100;
+        const estimated = m.estimatedWorkloadHours || 0;
+        const capacity = m.weeklyCapacity || 40;
+        const percent = capacity > 0 ? (estimated / capacity) * 100 : 0;
         return percent >= 80;
     }).length;
 
@@ -62,7 +64,6 @@ const WorkloadPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             Workload Management
-                            <Sparkles className="w-5 h-5 text-amber-300" />
                         </h1>
                         <p className="text-white/80 text-sm mt-0.5">Monitor and balance team workloads</p>
                     </div>
@@ -123,35 +124,56 @@ const WorkloadPage = () => {
                         <div className="text-center py-8 text-slate-400">No workload data available</div>
                     ) : (
                         members.map((member) => {
-                            const hours = member.currentHours || member.hours || 0;
-                            const capacity = member.capacity || 40;
-                            const percent = Math.round((hours / capacity) * 100);
+                            const estimated = member.estimatedWorkloadHours || 0;
+                            const logged = member.loggedHours || member.hours || 0;
+                            const capacity = member.weeklyCapacity || 40;
+                            const remaining = member.remainingHours || Math.max(0, estimated - logged);
+                            const percent = capacity > 0 ? Math.round((estimated / capacity) * 100) : 0;
                             const name = member.employeeName || member.name || 'Unknown';
+                            const tasks = member.tasks || 0;
                             return (
                                 <div key={member.userId || member.id} className="bg-slate-50 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getLoadColor(percent)} flex items-center justify-center text-white text-sm font-bold`}>
                                                 {name.split(' ').map(n => n[0]).join('')}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-slate-800">{name}</p>
-                                                <p className="text-xs text-slate-500">{member.teamName || 'Team'} • {member.taskCount || 0} tasks</p>
+                                                <p className="text-xs text-slate-500">{member.role || 'Employee'}</p>
                                             </div>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLoadBg(percent)} ${percent >= 90 ? 'text-rose-700' : percent >= 70 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${getLoadBg(percent)} ${percent >= 90 ? 'text-rose-700' : percent >= 70 ? 'text-amber-700' : 'text-emerald-700'}`}>
                                             {percent}%
                                         </span>
                                     </div>
-                                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+
+                                    {/* Progress bar — based on estimated hours */}
+                                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden mb-3">
                                         <div
-                                            className={`h-full rounded-full bg-gradient-to-r ${getLoadColor(percent)}`}
+                                            className={`h-full rounded-full bg-gradient-to-r ${getLoadColor(percent)} transition-all duration-500`}
                                             style={{ width: `${Math.min(percent, 100)}%` }}
                                         />
                                     </div>
-                                    <div className="flex justify-between mt-1 text-xs text-slate-400">
-                                        <span>{hours}h logged</span>
-                                        <span>{capacity}h capacity</span>
+
+                                    {/* Metrics grid */}
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                                            <p className="text-lg font-bold text-indigo-600">{tasks}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">Tasks</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                                            <p className="text-lg font-bold text-blue-600">{estimated}h</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">Workload</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                                            <p className="text-lg font-bold text-emerald-600">{logged}h</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">Logged</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-2 text-center border border-slate-100">
+                                            <p className="text-lg font-bold text-slate-600">{capacity}h</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">Capacity</p>
+                                        </div>
                                     </div>
                                 </div>
                             );

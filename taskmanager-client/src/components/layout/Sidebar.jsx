@@ -13,14 +13,10 @@ import {
   Shield,
   LogOut,
   Brain,
-  Sparkles,
-  Target,
   CheckSquare,
   Settings,
-  Trophy,
-  Heart,
-  FileText,
   TrendingUp,
+  Award,
   Mail,
   FolderKanban,
   ShieldAlert,
@@ -47,9 +43,9 @@ const getNavigationByRole = (userRole) => {
       { name: 'Tasks', href: '/manager/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
       { name: 'Projects', href: '/manager/projects', icon: FolderKanban, color: 'from-violet-500 to-indigo-600' },
       { name: 'Approvals', href: '/manager/approvals', icon: CheckSquare, color: 'from-amber-500 to-amber-600' },
-      { name: 'Team Pulse', href: '/manager/pulse', icon: Target, color: 'from-rose-500 to-rose-600' },
       { name: 'Time Logs', href: '/manager/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Analytics', href: '/manager/analytics', icon: BarChart3, color: 'from-indigo-500 to-indigo-600' },
+      { name: 'Performance Reviews', href: '/manager/reviews', icon: Award, color: 'from-purple-500 to-violet-600' },
     ],
 
     // Team Lead — all /teamlead/ prefixed
@@ -58,7 +54,6 @@ const getNavigationByRole = (userRole) => {
       { name: 'My Projects', href: '/teamlead/projects', icon: FolderKanban, color: 'from-purple-500 to-indigo-600' },
       { name: 'My Team', href: '/teamlead/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
       { name: 'Tasks', href: '/teamlead/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
-      { name: 'Team Updates', href: '/teamlead/daily-updates', icon: Mail, color: 'from-sky-500 to-blue-600' },
       { name: 'Time Logs', href: '/teamlead/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Workload', href: '/teamlead/workload', icon: Scale, color: 'from-rose-500 to-rose-600' },
       { name: 'Pause Requests', href: '/teamlead/pause-requests', icon: ShieldAlert, color: 'from-red-500 to-red-600' },
@@ -69,27 +64,15 @@ const getNavigationByRole = (userRole) => {
       { name: 'My Dashboard', href: '/employee/dashboard', icon: LayoutDashboard, color: 'from-purple-500 to-purple-600' },
       { name: 'My Tasks', href: '/employee/tasks', icon: CheckSquare, color: 'from-blue-500 to-blue-600' },
       { name: 'Time Logs', href: '/employee/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
-      { name: 'Daily Update', href: '/employee/goals', icon: Mail, color: 'from-sky-500 to-blue-600' },
       { name: 'Skill Progress', href: '/employee/skills', icon: TrendingUp, color: 'from-violet-500 to-violet-600' },
-      { name: 'Peer Recognition', href: '/employee/recognition', icon: Heart, color: 'from-rose-500 to-pink-600' },
-      { name: 'Weekly Reflection', href: '/employee/reflection', icon: FileText, color: 'from-teal-500 to-cyan-600' },
-      { name: 'Leaderboard', href: '/employee/leaderboard', icon: Trophy, color: 'from-amber-400 to-orange-500' },
-    ],
-
-    // HR — all /hr/ prefixed
-    hr: [
-      { name: 'HR Dashboard', href: '/hr/dashboard', icon: LayoutDashboard, color: 'from-pink-500 to-rose-600' },
-      { name: 'Employees', href: '/hr/employees', icon: Users, color: 'from-violet-500 to-violet-600' },
-      { name: 'Teams', href: '/hr/teams', icon: UsersRound, color: 'from-emerald-500 to-emerald-600' },
-      { name: 'Time Logs', href: '/hr/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
-      { name: 'Analytics', href: '/hr/analytics', icon: BarChart3, color: 'from-indigo-500 to-indigo-600' },
+      { name: 'My Reviews', href: '/employee/reviews', icon: Award, color: 'from-purple-500 to-violet-600' },
+      { name: 'My Progress', href: '/employee/progress', icon: BarChart3, color: 'from-indigo-500 to-indigo-600' },
     ],
   };
 
   if (userRole === 'Admin') return allNavigation.admin;
   if (userRole === 'Manager') return allNavigation.manager;
   if (userRole === 'Team Lead' || userRole === 'TeamLead') return allNavigation.teamLead;
-  if (userRole === 'HR') return allNavigation.hr;
 
   return allNavigation.employee;
 };
@@ -117,7 +100,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     if (path.startsWith('/teamlead')) return 'TeamLead';
     if (path.startsWith('/manager')) return 'Manager';
     if (path.startsWith('/employee')) return 'Employee';
-    if (path.startsWith('/hr')) return 'HR';
     const adminPaths = ['/dashboard', '/users', '/roles', '/teams'];
     if (adminPaths.some(p => path === p || path.startsWith(p + '/'))) return 'Admin';
     return null;
@@ -175,7 +157,6 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className="overflow-hidden">
                 <h1 className="text-sm font-bold tracking-tight whitespace-nowrap flex items-center gap-1.5">
                   CogniStruct
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 </h1>
                 <p className="text-[10px] text-white/40 whitespace-nowrap tracking-wider uppercase">Task Platform</p>
               </div>

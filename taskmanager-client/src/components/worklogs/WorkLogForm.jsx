@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import CustomSelect from '../common/CustomSelect';
+import DateTimePicker from '../common/DateTimePicker';
 import { ClipboardList } from 'lucide-react';
 
 const WorkLogForm = ({ isOpen, onClose, onSubmit, tasks = [], isLoading }) => {
@@ -92,12 +93,12 @@ const WorkLogForm = ({ isOpen, onClose, onSubmit, tasks = [], isLoading }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Start Time</label>
-            <input type="datetime-local" value={form.startTime} onChange={handleChange('startTime')} className={`input ${errors.startTime ? 'input-error' : ''}`} />
+            <DateTimePicker value={form.startTime} onChange={(val) => { setForm(p => ({...p, startTime: val})); setErrors(p => ({...p, startTime: ''})); }} error={!!errors.startTime} placeholder="Select start time" />
             {errors.startTime && <p className="text-xs text-danger-500 mt-1">{errors.startTime}</p>}
           </div>
           <div>
             <label className="label">End Time</label>
-            <input type="datetime-local" value={form.endTime} onChange={handleChange('endTime')} className={`input ${errors.endTime ? 'input-error' : ''}`} />
+            <DateTimePicker value={form.endTime} onChange={(val) => { setForm(p => ({...p, endTime: val})); setErrors(p => ({...p, endTime: ''})); }} error={!!errors.endTime} placeholder="Select end time" />
             {errors.endTime && <p className="text-xs text-danger-500 mt-1">{errors.endTime}</p>}
           </div>
         </div>

@@ -2,14 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Plus, FolderKanban, CheckCircle, Clock, AlertTriangle,
-    BarChart3, User, Users2, Flag, Sparkles, PauseCircle, ShieldAlert, Play, Pause
+    BarChart3, User, Users2, Flag, PauseCircle, ShieldAlert, Play, Pause, Ban, XCircle,
+    Star, MessageSquare, Zap, Award, TrendingUp
 } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
 import { teamApi } from '../../api/teamApi';
+import { workloadApi } from '../../api/workloadApi';
+import { feedbackApi } from '../../api/feedbackApi';
+import api from '../../api/axiosInstance';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import CustomSelect from '../../components/common/CustomSelect';
+import DateTimePicker from '../../components/common/DateTimePicker';
 import { TASK_PRIORITY_LABELS } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
@@ -34,15 +39,35 @@ const ProjectDetailPage = () => {
     });
     const [errors, setErrors] = useState({});
 
+    // Workload preview state
+    const [assigneeWorkload, setAssigneeWorkload] = useState(null);
+    const [loadingWorkload, setLoadingWorkload] = useState(false);
+
+    // AI Suggestion state
+    const [suggestions, setSuggestions] = useState([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Feedback state
+    const [feedbackTaskId, setFeedbackTaskId] = useState(null);
+    const [feedbackData, setFeedbackData] = useState({ workQuality: 0, timeliness: 0, communication: 0, strengths: '', improvements: '' });
+    const [submittingFeedback, setSubmittingFeedback] = useState(false);
+    const [submittedFeedbacks, setSubmittedFeedbacks] = useState(new Set());
+
     const fetchProject = useCallback(async () => {
         try {
             setIsLoading(true);
-            const [projRes, subtaskRes] = await Promise.all([
-                taskApi.getById(id),
-                taskApi.getSubTasks(id),
-            ]);
+            const projRes = await taskApi.getById(id);
             setProject(projRes.data);
-            setSubtasks(subtaskRes.data || []);
+
+            // Fetch subtasks separately — handle 403 gracefully
+            try {
+                const subtaskRes = await taskApi.getSubTasks(id);
+                setSubtasks(subtaskRes.data || []);
+            } catch (subtaskErr) {
+                console.warn('Could not load subtasks:', subtaskErr.response?.status);
+                setSubtasks([]);
+            }
 
             // Load team members
             if (projRes.data.teamId) {
@@ -69,6 +94,7 @@ const ProjectDetailPage = () => {
         if (!form.assignedTo) errs.assignedTo = 'Select an assignee';
         if (!form.deadline) errs.deadline = 'Deadline is required';
         if (!form.estimatedHours || Number(form.estimatedHours) <= 0) errs.estimatedHours = 'Valid hours required';
+        if (!form.requiredSkills?.trim()) errs.requiredSkills = 'At least one skill is required';
         setErrors(errs);
         if (Object.keys(errs).length > 0) return;
 
@@ -86,12 +112,68 @@ const ProjectDetailPage = () => {
             });
             toast.success('Subtask created successfully');
             setShowCreateModal(false);
+            setShowSuggestions(false);
+            setSuggestions([]);
             setForm({ title: '', description: '', assignedTo: '', priority: 1, deadline: '', estimatedHours: '', requiredSkills: '' });
             fetchProject();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to create subtask');
         } finally {
             setCreating(false);
+        }
+    };
+
+    // AI Suggestion handler
+    const handleSuggestEmployees = async () => {
+        if (!form.requiredSkills?.trim()) {
+            toast.error('Enter required skills first (e.g. React,SQL)');
+            return;
+        }
+        if (!project?.teamId) {
+            toast.error('No team associated with this project');
+            return;
+        }
+        try {
+            setLoadingSuggestions(true);
+            const res = await workloadApi.getSkillRecommendation(
+                project.teamId,
+                form.requiredSkills,
+                Number(form.estimatedHours) || 8
+            );
+            setSuggestions(res.data || []);
+            setShowSuggestions(true);
+        } catch (err) {
+            toast.error('Failed to get AI suggestions');
+        } finally {
+            setLoadingSuggestions(false);
+        }
+    };
+
+    // Feedback handler
+    const handleSubmitFeedback = async (taskId) => {
+        const { workQuality, timeliness, communication } = feedbackData;
+        if (workQuality < 1 || timeliness < 1 || communication < 1) {
+            toast.error('Please rate all three criteria (1-5)');
+            return;
+        }
+        try {
+            setSubmittingFeedback(true);
+            await feedbackApi.submit({
+                taskId,
+                workQualityRating: workQuality,
+                timelinessRating: timeliness,
+                communicationRating: communication,
+                strengths: feedbackData.strengths,
+                improvements: feedbackData.improvements
+            });
+            toast.success('Feedback submitted!');
+            setSubmittedFeedbacks(prev => new Set([...prev, taskId]));
+            setFeedbackTaskId(null);
+            setFeedbackData({ workQuality: 0, timeliness: 0, communication: 0, strengths: '', improvements: '' });
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to submit feedback');
+        } finally {
+            setSubmittingFeedback(false);
         }
     };
 
@@ -138,6 +220,8 @@ const ProjectDetailPage = () => {
             2: { label: 'In Progress', color: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500' },
             3: { label: 'Completed', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
             4: { label: 'Paused', color: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500' },
+            5: { label: 'Blocked', color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+            6: { label: 'Cancelled', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
         };
         return map[status] || map[0];
     };
@@ -172,11 +256,15 @@ const ProjectDetailPage = () => {
     const activeCount = subtasks.filter(t => t.status !== 3).length;
     const isPaused = project.status === 4;
     const isCompleted = project.status === 3;
-    const canComplete = subtasks.length > 0 && completedCount === subtasks.length && !isPaused && !isCompleted;
+    const isBlocked = project.status === 5;
+    const isCancelled = project.status === 6;
+    const canComplete = subtasks.length > 0 && completedCount === subtasks.length && !isPaused && !isCompleted && !isCancelled;
 
+    // Only show Employees in the subtask assignment dropdown (exclude Manager, TeamLead, Admin)
+    const employeeMembers = teamMembers.filter(m => (m.role || '').toLowerCase() === 'employee');
     const employeeOptions = [
-        { value: '', label: 'Select team member' },
-        ...teamMembers.map(m => ({ value: m.userId, label: m.name || `${m.firstName || ''} ${m.lastName || ''}` }))
+        { value: '', label: employeeMembers.length > 0 ? 'Select employee' : 'No employees available' },
+        ...employeeMembers.map(m => ({ value: m.userId, label: m.name || `${m.firstName || ''} ${m.lastName || ''}` }))
     ];
 
     const priorityOptions = Object.entries(TASK_PRIORITY_LABELS).map(([key, label]) => ({
@@ -210,8 +298,8 @@ const ProjectDetailPage = () => {
                             icon={Plus}
                             onClick={() => setShowCreateModal(true)}
                             className="!bg-white !text-indigo-600 hover:!bg-white/90"
-                            disabled={isPaused || isCompleted}
-                            title={isPaused ? 'Cannot create subtasks while project is paused' : isCompleted ? 'Project is completed' : ''}
+                            disabled={isPaused || isCompleted || isCancelled || isBlocked}
+                            title={isPaused ? 'Cannot create subtasks while project is paused' : isCompleted ? 'Project is completed' : isCancelled ? 'Project is cancelled' : isBlocked ? 'Project is blocked' : ''}
                         >
                             Create Subtask
                         </Button>
@@ -254,6 +342,24 @@ const ProjectDetailPage = () => {
                     </div>
                 </div>
             )}
+            {isBlocked && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                    <ShieldAlert className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-semibold text-red-700">Project Blocked</p>
+                        <p className="text-xs text-red-500">This project is currently blocked and cannot progress.</p>
+                    </div>
+                </div>
+            )}
+            {isCancelled && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700">Project Cancelled</p>
+                        <p className="text-xs text-gray-400">This project has been cancelled by an administrator.</p>
+                    </div>
+                </div>
+            )}
 
             {/* Project Info */}
             {project.description && (
@@ -282,9 +388,11 @@ const ProjectDetailPage = () => {
                     <div className="divide-y divide-slate-100">
                         {subtasks.map(task => {
                             const sc = getStatusConfig(task.status);
+                            const isCompleted = task.status === 3;
+                            const hasFeedback = submittedFeedbacks.has(task.id);
                             return (
+                                <div key={task.id}>
                                 <div
-                                    key={task.id}
                                     onClick={() => navigate(`/tasks/${task.id}`)}
                                     className="px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between gap-4"
                                 >
@@ -311,7 +419,7 @@ const ProjectDetailPage = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                        {task.status !== 3 && task.status !== 4 && (
+                                        {task.status !== 3 && task.status !== 4 && task.status !== 5 && task.status !== 6 && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'pause', taskId: task.id }); }}
                                                 className="p-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
@@ -329,10 +437,110 @@ const ProjectDetailPage = () => {
                                                 <Play className="w-3.5 h-3.5" />
                                             </button>
                                         )}
+                                        {isCompleted && !hasFeedback && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setFeedbackTaskId(task.id); }}
+                                                className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
+                                                title="Give feedback"
+                                            >
+                                                <Star className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                        {isCompleted && hasFeedback && (
+                                            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600" title="Feedback submitted">
+                                                <Award className="w-3.5 h-3.5" />
+                                            </span>
+                                        )}
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${sc.color}`}>
                                             {sc.label}
                                         </span>
                                     </div>
+                                </div>
+                                {/* Inline Feedback Form */}
+                                {feedbackTaskId === task.id && (
+                                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-200" onClick={e => e.stopPropagation()}>
+                                        <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                                            <Award className="w-4 h-4 text-indigo-500" />
+                                            Evaluate {task.assigneeName || 'Employee'}'s performance
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            {[
+                                                { key: 'workQuality', label: 'Work Quality' },
+                                                { key: 'timeliness', label: 'Timeliness' },
+                                                { key: 'communication', label: 'Communication' },
+                                            ].map(({ key, label }) => (
+                                                <div key={key}>
+                                                    <label className="text-xs font-semibold text-slate-500 mb-1.5 block">{label}</label>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4, 5].map(n => (
+                                                            <button
+                                                                key={n}
+                                                                type="button"
+                                                                onClick={() => setFeedbackData(prev => ({ ...prev, [key]: n }))}
+                                                                className={`flex-1 py-1.5 rounded-md text-sm font-bold transition-all cursor-pointer border ${
+                                                                    feedbackData[key] === n
+                                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                        : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                                                                }`}
+                                                            >
+                                                                {n}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 mt-1 text-center">
+                                                        {['', 'Poor', 'Needs Improvement', 'Satisfactory', 'Very Good', 'Excellent'][feedbackData[key]] || '—'}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {feedbackData.workQuality > 0 && feedbackData.timeliness > 0 && feedbackData.communication > 0 && (
+                                            <div className="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-center">
+                                                <span className="text-xs text-indigo-500 font-medium">Overall Score: </span>
+                                                <span className="text-lg font-bold text-indigo-700">
+                                                    {((feedbackData.workQuality + feedbackData.timeliness + feedbackData.communication) / 3).toFixed(1)}
+                                                </span>
+                                                <span className="text-xs text-indigo-400"> / 5</span>
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Strengths</label>
+                                                <textarea
+                                                    value={feedbackData.strengths}
+                                                    onChange={e => setFeedbackData(prev => ({ ...prev, strengths: e.target.value }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 outline-none"
+                                                    rows={2}
+                                                    placeholder="What did they do well?"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-1 block">Areas for Improvement</label>
+                                                <textarea
+                                                    value={feedbackData.improvements}
+                                                    onChange={e => setFeedbackData(prev => ({ ...prev, improvements: e.target.value }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 outline-none"
+                                                    rows={2}
+                                                    placeholder="What could be improved?"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <button
+                                                onClick={() => { setFeedbackTaskId(null); setFeedbackData({ workQuality: 0, timeliness: 0, communication: 0, strengths: '', improvements: '' }); }}
+                                                className="px-4 py-2 text-slate-500 text-sm hover:text-slate-700 transition-colors cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleSubmitFeedback(task.id)}
+                                                disabled={submittingFeedback || feedbackData.workQuality < 1 || feedbackData.timeliness < 1 || feedbackData.communication < 1}
+                                                className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors cursor-pointer"
+                                            >
+                                                {submittingFeedback ? 'Saving...' : 'Submit Feedback'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                                 </div>
                             );
                         })}
@@ -381,13 +589,72 @@ const ProjectDetailPage = () => {
                             <label className="label">Assign To</label>
                             <CustomSelect
                                 value={form.assignedTo}
-                                onChange={val => { setForm(p => ({ ...p, assignedTo: val })); setErrors(p => ({ ...p, assignedTo: '' })); }}
+                                onChange={val => {
+                                    setForm(p => ({ ...p, assignedTo: val }));
+                                    setErrors(p => ({ ...p, assignedTo: '' }));
+                                    // Fetch workload for selected employee
+                                    if (val) {
+                                        setLoadingWorkload(true);
+                                        api.get(`/api/workload/employee/${val}`)
+                                            .then(res => setAssigneeWorkload(res.data))
+                                            .catch(() => setAssigneeWorkload(null))
+                                            .finally(() => setLoadingWorkload(false));
+                                    } else {
+                                        setAssigneeWorkload(null);
+                                    }
+                                }}
                                 options={employeeOptions}
                                 placeholder="Select team member"
                                 icon={User}
                                 className={errors.assignedTo ? 'ring-2 ring-danger-200 rounded-lg' : ''}
                             />
                             {errors.assignedTo && <p className="text-xs text-danger-500 mt-1">{errors.assignedTo}</p>}
+
+                            {/* Workload Preview */}
+                            {loadingWorkload && (
+                                <div className="mt-2 p-2 bg-slate-50 rounded-lg text-xs text-slate-400 animate-pulse">Loading workload...</div>
+                            )}
+                            {assigneeWorkload && !loadingWorkload && (() => {
+                                const current = assigneeWorkload.estimatedWorkloadHours || 0;
+                                const newHours = Number(form.estimatedHours) || 0;
+                                const projected = current + newHours;
+                                const capacity = assigneeWorkload.weeklyCapacity || 40;
+                                const percent = capacity > 0 ? Math.round((projected / capacity) * 100) : 0;
+                                return (
+                                    <div className={`mt-2 p-3 rounded-lg border text-xs ${
+                                        percent > 100 ? 'bg-red-50 border-red-200' :
+                                        percent > 80 ? 'bg-amber-50 border-amber-200' :
+                                        'bg-emerald-50 border-emerald-200'
+                                    }`}>
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <Zap className={`w-3.5 h-3.5 ${percent > 100 ? 'text-red-500' : percent > 80 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                                            <span className="font-semibold text-slate-700">Workload Preview</span>
+                                        </div>
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-slate-500">Current: {current}h</span>
+                                            <span className="text-slate-500">+ {newHours}h = <strong className="text-slate-700">{projected}h</strong></span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-white rounded-full overflow-hidden mb-1.5">
+                                            <div className={`h-full rounded-full transition-all ${percent > 100 ? 'bg-red-500' : percent > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(percent, 100)}%` }} />
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={`font-bold ${percent > 100 ? 'text-red-600' : percent > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                {percent}% of {capacity}h capacity
+                                            </span>
+                                        </div>
+                                        {percent > 100 && (
+                                            <div className="flex items-center gap-1 mt-1.5 text-red-600 font-semibold">
+                                                <AlertTriangle className="w-3.5 h-3.5" /> Employee will exceed weekly capacity
+                                            </div>
+                                        )}
+                                        {percent > 80 && percent <= 100 && (
+                                            <div className="flex items-center gap-1 mt-1.5 text-amber-600 font-semibold">
+                                                <AlertTriangle className="w-3.5 h-3.5" /> Employee is nearing capacity
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                         <div>
                             <label className="label">Priority</label>
@@ -404,11 +671,11 @@ const ProjectDetailPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label className="label">Deadline</label>
-                            <input
-                                type="datetime-local"
+                            <DateTimePicker
                                 value={form.deadline}
-                                onChange={e => { setForm(p => ({ ...p, deadline: e.target.value })); setErrors(p => ({ ...p, deadline: '' })); }}
-                                className={`input ${errors.deadline ? 'input-error' : ''}`}
+                                onChange={val => { setForm(p => ({ ...p, deadline: val })); setErrors(p => ({ ...p, deadline: '' })); }}
+                                error={!!errors.deadline}
+                                placeholder="Select deadline"
                             />
                             {errors.deadline && <p className="text-xs text-danger-500 mt-1">{errors.deadline}</p>}
                         </div>
@@ -426,15 +693,114 @@ const ProjectDetailPage = () => {
                             {errors.estimatedHours && <p className="text-xs text-danger-500 mt-1">{errors.estimatedHours}</p>}
                         </div>
                         <div>
-                            <label className="label">Required Skills</label>
-                            <input
-                                value={form.requiredSkills}
-                                onChange={e => setForm(p => ({ ...p, requiredSkills: e.target.value }))}
-                                className="input"
-                                placeholder="e.g. React,SQL"
-                            />
+                            <label className="label">Required Skills <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                                <input
+                                    value={form.requiredSkills}
+                                    onChange={e => { setForm(p => ({ ...p, requiredSkills: e.target.value })); setErrors(p => ({ ...p, requiredSkills: '' })); }}
+                                    className={`input flex-1 ${errors.requiredSkills ? 'input-error' : ''}`}
+                                    placeholder="e.g. React,SQL"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleSuggestEmployees}
+                                    disabled={loadingSuggestions}
+                                    className="px-3 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-xs font-semibold rounded-lg hover:from-violet-600 hover:to-indigo-600 disabled:opacity-50 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm"
+                                >
+                                    {loadingSuggestions ? 'Loading...' : 'Suggest'}
+                                </button>
+                            </div>
+                            {errors.requiredSkills && <p className="text-xs text-danger-500 mt-1">{errors.requiredSkills}</p>}
+                            <p className="text-[10px] text-slate-400 mt-1">Skills are used for AI assignment and skill tracking</p>
                         </div>
                     </div>
+
+                    {/* AI Suggestion Panel */}
+                    {showSuggestions && (
+                        <div className="mt-4 p-4 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-xl border border-violet-200">
+                            <h4 className="text-sm font-bold text-violet-800 mb-3 flex items-center gap-2">
+                                AI Recommended Assignees
+                                <span className="text-xs font-normal text-violet-500 ml-auto">Click to assign</span>
+                            </h4>
+                            {suggestions.length === 0 ? (
+                                <p className="text-sm text-slate-500 text-center py-4">No matching employees found. Try different skills or check team composition.</p>
+                            ) : (
+                                <div className="space-y-2 max-h-72 overflow-y-auto">
+                                    {suggestions.map((s, idx) => (
+                                        <button
+                                            key={s.userId}
+                                            onClick={() => {
+                                                setForm(p => ({ ...p, assignedTo: s.userId }));
+                                                setErrors(p => ({ ...p, assignedTo: '' }));
+                                                // Trigger workload fetch
+                                                setLoadingWorkload(true);
+                                                api.get(`/api/workload/employee/${s.userId}`)
+                                                    .then(res => setAssigneeWorkload(res.data))
+                                                    .catch(() => setAssigneeWorkload(null))
+                                                    .finally(() => setLoadingWorkload(false));
+                                                toast.success(`Selected ${s.name}`);
+                                            }}
+                                            className={`w-full text-left p-3 rounded-lg border transition-all hover:shadow-md ${
+                                                Number(form.assignedTo) === s.userId
+                                                    ? 'bg-white border-violet-400 ring-2 ring-violet-200 shadow-sm'
+                                                    : 'bg-white/70 border-violet-100 hover:border-violet-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                                        idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-100 text-slate-600' : 'bg-orange-50 text-orange-600'
+                                                    }`}>
+                                                        {idx + 1}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-sm text-slate-800">{s.name}</p>
+                                                        <p className="text-xs text-slate-500">{s.reason}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right flex items-center gap-2">
+                                                    {s.warning && (
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                                                            s.warning === 'Overloaded' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                                        }`}>
+                                                            <AlertTriangle className="w-3 h-3" />
+                                                            {s.warning}
+                                                        </span>
+                                                    )}
+                                                    <div>
+                                                        <p className="text-lg font-bold text-violet-700">{s.assignmentScore}</p>
+                                                        <p className="text-[10px] text-slate-400">Score</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Workload bar */}
+                                            <div className="mb-2">
+                                                <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                                                    <span>Workload: {s.estimatedWorkloadHours || 0}h / {s.weeklyCapacity || 40}h</span>
+                                                    <span className={`font-bold ${s.workload > 100 ? 'text-red-600' : s.workload > 80 ? 'text-amber-600' : 'text-emerald-600'}`}>{s.workload}%</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all ${
+                                                        s.workload > 100 ? 'bg-red-500' : s.workload > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                                                    }`} style={{ width: `${Math.min(s.workload, 100)}%` }} />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-1.5 flex-wrap">
+                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded-full">Skill {s.skillMatchPercentage}%</span>
+                                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-semibold rounded-full">Avail {s.availabilityScore}</span>
+                                                <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-[10px] font-semibold rounded-full">Perf {s.performanceScore}</span>
+                                                <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-semibold rounded-full">Feedback {s.feedbackScore}</span>
+                                                <span className="px-2 py-0.5 bg-pink-50 text-pink-600 text-[10px] font-semibold rounded-full">Review {s.managerScore}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <p className="text-[10px] text-violet-400 mt-3 text-center italic">AI suggests candidates only — you choose who to assign</p>
+                        </div>
+                    )}
                 </div>
             </Modal>
 

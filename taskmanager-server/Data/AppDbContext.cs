@@ -16,9 +16,14 @@ public class AppDbContext : DbContext
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
-    public DbSet<DailyUpdateStatus> DailyUpdateStatuses => Set<DailyUpdateStatus>();
     public DbSet<TaskAuditLog> TaskAuditLogs => Set<TaskAuditLog>();
     public DbSet<PauseRequest> PauseRequests => Set<PauseRequest>();
+    public DbSet<TaskAttachment> TaskAttachments => Set<TaskAttachment>();
+    public DbSet<TaskFeedback> TaskFeedbacks => Set<TaskFeedback>();
+    public DbSet<EmployeeReview> EmployeeReviews => Set<EmployeeReview>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+    public DbSet<TrainingRequest> TrainingRequests => Set<TrainingRequest>();
+    public DbSet<SkillUsage> SkillUsages => Set<SkillUsage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -160,6 +165,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Notification>()
             .HasIndex(n => new { n.UserId, n.IsRead });
 
+        modelBuilder.Entity<Notification>()
+            .HasIndex(n => new { n.UserId, n.CreatedDate });
+
         // ─── UserSettings (one-to-one) ───────────────
         modelBuilder.Entity<UserSettings>()
             .HasOne(us => us.User)
@@ -169,23 +177,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<UserSettings>()
             .HasIndex(us => us.UserId)
-            .IsUnique();
-
-        // ─── DailyUpdateStatus ─────────────────────
-        modelBuilder.Entity<DailyUpdateStatus>()
-            .HasOne(d => d.User)
-            .WithMany(u => u.DailyUpdates)
-            .HasForeignKey(d => d.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<DailyUpdateStatus>()
-            .HasOne(d => d.AcknowledgedBy)
-            .WithMany()
-            .HasForeignKey(d => d.AcknowledgedByUserId)
-            .OnDelete(DeleteBehavior.NoAction);
-
-        modelBuilder.Entity<DailyUpdateStatus>()
-            .HasIndex(d => new { d.UserId, d.UpdateDate })
             .IsUnique();
 
         // ─── TaskAuditLog ─────────────────────────────
@@ -203,5 +194,68 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<TaskAuditLog>()
             .HasIndex(a => a.TaskId);
+
+        // ─── TaskAttachment ───────────────────────────────
+        modelBuilder.Entity<TaskAttachment>()
+            .HasOne(a => a.Task)
+            .WithMany()
+            .HasForeignKey(a => a.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .HasOne(a => a.UploadedBy)
+            .WithMany()
+            .HasForeignKey(a => a.UploadedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .HasIndex(a => a.TaskId);
+
+        // ─── Additional Indexes ──────────────────────────
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => t.Deadline);
+
+        // ─── TaskFeedback ───────────────────────────────
+        modelBuilder.Entity<TaskFeedback>()
+            .HasOne(f => f.Task)
+            .WithMany()
+            .HasForeignKey(f => f.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskFeedback>()
+            .HasOne(f => f.Employee)
+            .WithMany()
+            .HasForeignKey(f => f.EmployeeId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<TaskFeedback>()
+            .HasOne(f => f.TeamLead)
+            .WithMany()
+            .HasForeignKey(f => f.TeamLeadId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<TaskFeedback>()
+            .HasIndex(f => f.TaskId)
+            .IsUnique(); // one feedback per task
+
+        modelBuilder.Entity<TaskFeedback>()
+            .HasIndex(f => f.EmployeeId);
+
+        // ─── EmployeeReview ─────────────────────────────
+        modelBuilder.Entity<EmployeeReview>()
+            .HasOne(r => r.Employee)
+            .WithMany()
+            .HasForeignKey(r => r.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EmployeeReview>()
+            .HasOne(r => r.Manager)
+            .WithMany()
+            .HasForeignKey(r => r.ManagerId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<EmployeeReview>()
+            .HasIndex(r => new { r.EmployeeId, r.ReviewPeriod })
+            .IsUnique(); // one review per employee per period
     }
 }

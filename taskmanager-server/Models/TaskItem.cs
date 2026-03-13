@@ -29,7 +29,7 @@ public class TaskItem
     /// <summary>0=Low, 1=Medium, 2=High, 3=Critical</summary>
     public int Priority { get; set; } = 1;
 
-    /// <summary>0=Pending, 1=Assigned, 2=InProgress, 3=Completed</summary>
+    /// <summary>0=Pending, 1=Assigned, 2=InProgress, 3=Completed, 4=Paused, 5=Blocked, 6=Cancelled</summary>
     public int Status { get; set; } = 0;
 
     public DateTime? Deadline { get; set; }
@@ -39,11 +39,20 @@ public class TaskItem
     public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedDate { get; set; }
 
+    /// <summary>Set when status changes to InProgress. Used for SLA computation.</summary>
+    public DateTime? StartedAt { get; set; }
+
     /// <summary>Set when task is paused (Status=4). Cleared on resume.</summary>
     public DateTime? PausedAt { get; set; }
 
     [MaxLength(500)]
     public string? PauseReason { get; set; }
+
+    /// <summary>SLA target hours from StartedAt. Null = no SLA.</summary>
+    public double? SlaHours { get; set; }
+
+    /// <summary>True when UtcNow > StartedAt + SlaHours.</summary>
+    public bool SlaBreached { get; set; } = false;
 
     /// <summary>Comma-separated required skills (e.g. "React,SQL,API")</summary>
     [MaxLength(500)]

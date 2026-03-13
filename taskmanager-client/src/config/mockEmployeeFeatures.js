@@ -34,77 +34,6 @@ export const TRAINING_REQUESTS = [
     { id: 2, userId: 3, skillId: 11, status: 'approved', requestedAt: '2026-01-20' },
 ];
 
-// Kudos/Recognition data
-export const KUDOS_DATA = [
-    {
-        id: 1,
-        fromUserId: 2,
-        fromName: 'Manager User',
-        toUserId: 3,
-        toName: 'Employee User',
-        message: 'Great job on completing the dashboard redesign ahead of schedule!',
-        points: 50,
-        category: 'excellence',
-        createdAt: '2026-02-08T10:30:00',
-    },
-    {
-        id: 2,
-        fromUserId: 4,
-        fromName: 'HR User',
-        toUserId: 3,
-        toName: 'Employee User',
-        message: 'Thank you for helping onboard the new team members!',
-        points: 30,
-        category: 'teamwork',
-        createdAt: '2026-02-07T14:20:00',
-    },
-    {
-        id: 3,
-        fromUserId: 3,
-        fromName: 'Employee User',
-        toUserId: 2,
-        toName: 'Manager User',
-        message: 'Thanks for the mentorship and guidance this week!',
-        points: 40,
-        category: 'leadership',
-        createdAt: '2026-02-06T09:15:00',
-    },
-];
-
-export const KUDOS_CATEGORIES = [
-    { id: 'excellence', name: 'Excellence', icon: '⭐', color: 'amber' },
-    { id: 'teamwork', name: 'Teamwork', icon: '🤝', color: 'blue' },
-    { id: 'innovation', name: 'Innovation', icon: '💡', color: 'purple' },
-    { id: 'leadership', name: 'Leadership', icon: '🎯', color: 'emerald' },
-    { id: 'support', name: 'Helping Others', icon: '❤️', color: 'rose' },
-];
-
-// Weekly reflections
-export const WEEKLY_REFLECTIONS = [
-    {
-        id: 1,
-        userId: 3,
-        weekStart: '2026-02-03',
-        wins: 'Completed the dashboard redesign. Fixed 5 critical bugs.',
-        challenges: 'API integration took longer than expected due to documentation issues.',
-        learnings: 'Need to allocate more time for third-party integrations.',
-        mood: 4, // 1-5 scale
-        goals: 'Finish user profile feature. Improve test coverage.',
-        submittedAt: '2026-02-07T17:00:00',
-    },
-    {
-        id: 2,
-        userId: 3,
-        weekStart: '2026-01-27',
-        wins: 'Successfully deployed v2.0 to production. Zero downtime.',
-        challenges: 'Team coordination was difficult with remote members.',
-        learnings: 'Better async communication tools needed.',
-        mood: 5,
-        goals: 'Start dashboard redesign.',
-        submittedAt: '2026-01-31T16:30:00',
-    },
-];
-
 // Blocker categories
 export const BLOCKER_CATEGORIES = [
     { id: 'waiting', name: 'Waiting for Others', icon: '⏳' },
@@ -181,39 +110,6 @@ export const ANALYTICS_AGGREGATES = {
             { name: 'Project Management', avgRating: 2.8, gapCount: 6 },
         ],
         trainingRequests: { pending: 5, approved: 12, completed: 8 },
-    },
-    recognition: {
-        totalKudos: 156,
-        thisWeek: 23,
-        topGivers: [
-            { name: 'Manager User', count: 15 },
-            { name: 'Team Lead', count: 12 },
-        ],
-        topReceivers: [
-            { name: 'Employee User', count: 18, points: 540 },
-            { name: 'Developer A', count: 14, points: 420 },
-        ],
-        byCategory: {
-            excellence: 45,
-            teamwork: 38,
-            innovation: 28,
-            leadership: 25,
-            support: 20,
-        },
-    },
-    sentiment: {
-        avgMood: 3.8,
-        trend: [
-            { week: 'Week 1', mood: 3.5 },
-            { week: 'Week 2', mood: 3.7 },
-            { week: 'Week 3', mood: 4.0 },
-            { week: 'Week 4', mood: 3.8 },
-        ],
-        topChallenges: [
-            'Communication gaps',
-            'Unclear requirements',
-            'Tight deadlines',
-        ],
     },
     blockers: {
         activeCount: 8,

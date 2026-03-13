@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Users, Sparkles, Loader2, Search, ArrowUpRight,
+    Users, Loader2, Search, ArrowUpRight,
     ClipboardList, Mail, X, Plus
 } from 'lucide-react';
 import Card from '../../components/common/Card';
@@ -95,7 +95,7 @@ const TeamLeadTeamPage = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
-                                My Team <Sparkles className="w-5 h-5 text-amber-300" />
+                                My Team
                             </h1>
                             <p className="text-white/80 text-sm mt-0.5">View your team and assign tasks to members</p>
                         </div>

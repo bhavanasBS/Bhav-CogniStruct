@@ -185,6 +185,60 @@ public class ManagersController : ControllerBase
     }
 
     /// <summary>
+    /// Get dashboard for current authenticated team lead
+    /// TeamLeads are linked via TeamMembers, not Teams.ManagerId
+    /// </summary>
+    [HttpGet("teamlead-dashboard")]
+    public async Task<IActionResult> GetTeamLeadDashboard()
+    {
+        var userId = GetCurrentUserId();
+        if (userId == 0) return Unauthorized();
+
+        // Get teams where this user is a member (TeamLeads are team members)
+        var teams = await _db.Teams
+            .Include(t => t.Manager)
+            .Include(t => t.Members).ThenInclude(m => m.User)
+            .Include(t => t.Tasks).ThenInclude(tk => tk.WorkLogs)
+            .Where(t => t.Members.Any(m => m.UserId == userId))
+            .ToListAsync();
+
+        var teamReports = teams.Select(t =>
+        {
+            var totalTasks = t.Tasks.Count;
+            var completedTasks = t.Tasks.Count(tk => tk.Status == 3);
+            var activeTasks = t.Tasks.Count(tk => tk.Status != 3);
+            var totalHours = t.Tasks.SelectMany(tk => tk.WorkLogs).Sum(w => w.TotalHours);
+            var efficiency = totalTasks > 0 ? Math.Round((double)completedTasks / totalTasks * 100, 1) : 0;
+
+            return new TeamReportDto
+            {
+                Id = t.TeamId,
+                Name = t.TeamName,
+                Lead = t.Manager != null ? $"{t.Manager.FirstName} {t.Manager.LastName}" : "Unassigned",
+                Members = t.Members.Count,
+                ActiveTasks = activeTasks,
+                CompletedTasks = completedTasks,
+                TotalHours = Math.Round(totalHours, 1),
+                Efficiency = efficiency,
+                Status = efficiency >= 70 ? "on-track" : efficiency >= 40 ? "at-risk" : "behind"
+            };
+        }).ToList();
+
+        var dashboard = new ManagerDashboardDto
+        {
+            TeamReports = teamReports,
+            TotalTeams = teams.Count,
+            ActiveTasks = teamReports.Sum(r => r.ActiveTasks),
+            TotalHours = Math.Round(teamReports.Sum(r => r.TotalHours), 1),
+            AvgEfficiency = teamReports.Any()
+                ? Math.Round(teamReports.Average(r => r.Efficiency), 1)
+                : 0
+        };
+
+        return Ok(dashboard);
+    }
+
+    /// <summary>
     /// Get team members for current authenticated manager
     /// </summary>
     [HttpGet("my-team")]

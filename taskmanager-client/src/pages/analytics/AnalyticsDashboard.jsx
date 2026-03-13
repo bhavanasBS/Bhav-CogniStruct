@@ -11,13 +11,14 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Zap,
-  Sparkles,
   Trophy,
+  Award,
 } from 'lucide-react';
 import Card, { CardHeader, CardTitle } from '../../components/common/Card';
 import TaskBarChart from '../../components/analytics/TaskBarChart';
 import StatusPieChart from '../../components/analytics/StatusPieChart';
 import WeeklyLineChart from '../../components/analytics/WeeklyLineChart';
+import api from '../../api/axiosInstance';
 
 /* ─── KPI data ────────────────────────────────────── */
 const kpis = [
@@ -30,16 +31,31 @@ const kpis = [
 ];
 
 /* ─── Top Performers ──────────────────────────────── */
-const topPerformers = [
-  { name: 'Priya Sharma', tasks: 24, hours: 86, efficiency: 95 },
-  { name: 'Rahul Gupta', tasks: 21, hours: 78, efficiency: 91 },
-  { name: 'Anita Desai', tasks: 19, hours: 72, efficiency: 88 },
-  { name: 'Vikram Singh', tasks: 18, hours: 68, efficiency: 86 },
-  { name: 'Sarah Khan', tasks: 16, hours: 60, efficiency: 84 },
-];
+// Loaded from API below
 
 const AnalyticsDashboard = () => {
   const [period, setPeriod] = useState('week');
+  const [productivity, setProductivity] = useState([]);
+  const [prodLoading, setProdLoading] = useState(true);
+  const [topPerformers, setTopPerformers] = useState([]);
+  const [topLoading, setTopLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/api/analytics/employee-productivity');
+        setProductivity(res.data || []);
+      } catch { setProductivity([]); }
+      finally { setProdLoading(false); }
+    })();
+    (async () => {
+      try {
+        const res = await api.get('/api/analytics/top-performers');
+        setTopPerformers(res.data || []);
+      } catch { setTopPerformers([]); }
+      finally { setTopLoading(false); }
+    })();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -60,7 +76,6 @@ const AnalyticsDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 Analytics Dashboard
-                <Sparkles className="w-5 h-5 text-amber-300" />
               </h1>
               <p className="text-white/80 text-sm mt-0.5">Real-time insights into team productivity and performance</p>
             </div>
@@ -146,6 +161,11 @@ const AnalyticsDashboard = () => {
             <CardTitle>Top Performers This Week</CardTitle>
           </div>
         </CardHeader>
+        {topLoading ? (
+          <div className="p-8 text-center text-slate-400 animate-pulse">Loading top performers…</div>
+        ) : topPerformers.length === 0 ? (
+          <div className="p-8 text-center text-slate-400">No completed tasks this week yet.</div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
@@ -159,7 +179,7 @@ const AnalyticsDashboard = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {topPerformers.map((p, i) => (
-                <tr key={p.name} className="hover:bg-slate-50 transition-colors">
+                <tr key={p.employeeName} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-lg'
                         : i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white'
@@ -172,17 +192,17 @@ const AnalyticsDashboard = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold">
-                        {p.name.split(' ').map((n) => n[0]).join('')}
+                        {p.employeeName.split(' ').map((n) => n[0]).join('')}
                       </div>
-                      <span className="text-sm font-medium text-slate-800">{p.name}</span>
+                      <span className="text-sm font-medium text-slate-800">{p.employeeName}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-slate-800">{p.tasks}</span>
+                    <span className="text-sm font-semibold text-slate-800">{p.tasksCompleted}</span>
                     <span className="text-xs text-slate-400 ml-1">tasks</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-slate-600">{p.hours}h</span>
+                    <span className="text-sm font-medium text-slate-600">{p.hoursLogged}h</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -203,6 +223,90 @@ const AnalyticsDashboard = () => {
             </tbody>
           </table>
         </div>
+        )}
+      </Card>
+
+      {/* Employee Productivity Report */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center">
+              <Award className="h-4 w-4 text-white" />
+            </div>
+            <CardTitle>Employee Productivity Report</CardTitle>
+          </div>
+        </CardHeader>
+        {prodLoading ? (
+          <div className="p-8 text-center text-slate-400 animate-pulse">Loading productivity data…</div>
+        ) : productivity.length === 0 ? (
+          <div className="p-8 text-center text-slate-400">No productivity data available yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Completed</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Overdue Rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Productivity</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Consistency</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {productivity.map((emp) => (
+                  <tr key={emp.employeeId} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                          {emp.employeeName.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span className="text-sm font-medium text-slate-800">{emp.employeeName}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-semibold text-slate-800">{emp.completedTasks}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-slate-600">{emp.averageCompletionTime}h</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-sm font-semibold ${emp.overdueRate > 30 ? 'text-rose-600' : emp.overdueRate > 10 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {emp.overdueRate}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${emp.productivityScore >= 80 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                              : emp.productivityScore >= 50 ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                                : 'bg-gradient-to-r from-amber-400 to-amber-500'}`}
+                            style={{ width: `${Math.min(emp.productivityScore, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700">{emp.productivityScore}%</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${emp.consistencyScore >= 80 ? 'bg-gradient-to-r from-purple-400 to-purple-500'
+                              : emp.consistencyScore >= 50 ? 'bg-gradient-to-r from-indigo-400 to-indigo-500'
+                                : 'bg-gradient-to-r from-rose-400 to-rose-500'}`}
+                            style={{ width: `${Math.min(emp.consistencyScore, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700">{emp.consistencyScore}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

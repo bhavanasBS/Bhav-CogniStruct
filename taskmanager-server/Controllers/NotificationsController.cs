@@ -24,19 +24,22 @@ public class NotificationsController : ControllerBase
         int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int limit = 10)
     {
         var userId = GetUserId();
 
         var notifications = await _db.Notifications
             .Where(n => n.UserId == userId)
             .OrderByDescending(n => n.CreatedDate)
+            .Take(limit)
             .Select(n => new NotificationDto
             {
                 Id = n.NotificationId,
+                Title = n.Title,
                 Type = n.Type,
                 Message = n.Message,
                 IsRead = n.IsRead,
+                RelatedEntityId = n.RelatedEntityId,
                 CreatedDate = n.CreatedDate
             })
             .ToListAsync();
