@@ -23,8 +23,6 @@ public class TaskItem
     public int? AssignerId { get; set; }
     public User? Assigner { get; set; }
 
-    public int? TeamId { get; set; }
-    public Team? Team { get; set; }
 
     /// <summary>0=Low, 1=Medium, 2=High, 3=Critical</summary>
     public int Priority { get; set; } = 1;
@@ -58,8 +56,13 @@ public class TaskItem
     [MaxLength(500)]
     public string? RequiredSkills { get; set; }
 
+    // ── Project ──
+    /// <summary>FK to the Project this task belongs to. Null for legacy/standalone tasks.</summary>
+    public int? ProjectId { get; set; }
+    public Project? Project { get; set; }
+
     // ── Hierarchy ──
-    /// <summary>Null = parent/project task. Set = subtask under a project.</summary>
+    /// <summary>Null = top-level task in a project. Set = subtask under another task.</summary>
     public int? ParentTaskId { get; set; }
     public TaskItem? ParentTask { get; set; }
     public ICollection<TaskItem> SubTasks { get; set; } = new List<TaskItem>();

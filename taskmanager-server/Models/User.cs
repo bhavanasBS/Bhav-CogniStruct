@@ -90,11 +90,15 @@ public class User
 
     // Navigation
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-    public ICollection<TeamMember> TeamMemberships { get; set; } = new List<TeamMember>();
+
     public ICollection<TaskItem> AssignedTasks { get; set; } = new List<TaskItem>();
     public ICollection<TaskItem> CreatedTasks { get; set; } = new List<TaskItem>();
     public ICollection<WorkLog> WorkLogs { get; set; } = new List<WorkLog>();
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    public ICollection<Team> ManagedTeams { get; set; } = new List<Team>();
+
     public ICollection<User> Subordinates { get; set; } = new List<User>();
+
+    // Team navigation
+    public ICollection<TeamMember> TeamMemberships { get; set; } = new List<TeamMember>();
+    public ICollection<Team> ManagedTeams { get; set; } = new List<Team>();
 }

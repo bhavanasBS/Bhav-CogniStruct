@@ -103,21 +103,22 @@ public class WorkloadController : ControllerBase
     }
 
     // ═══════════════════════════════════════════════════
-    // GET /api/workload/team/{teamId}
+    // GET /api/workload/team/{teamId} — now uses project-based membership
     // ═══════════════════════════════════════════════════
 
     [HttpGet("team/{teamId}")]
     public async Task<IActionResult> GetByTeam(int teamId)
     {
-        var members = await _db.Set<TeamMember>()
-            .Where(m => m.TeamId == teamId)
-            .Include(m => m.User).ThenInclude(u => u.AssignedTasks)
-            .Include(m => m.User).ThenInclude(u => u.WorkLogs)
-            .Include(m => m.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+        // teamId parameter kept for backward compat; query all active employees
+        var users = await _db.Users
+            .Include(u => u.AssignedTasks)
+            .Include(u => u.WorkLogs)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
             .ToListAsync();
 
-        var result = members
-            .Select(m => ComputeWorkload(m.User))
+        var result = users
+            .Select(u => ComputeWorkload(u))
             .OrderByDescending(w => w.Workload)
             .ToList();
 
@@ -165,40 +166,19 @@ public class WorkloadController : ControllerBase
         return Ok(ComputeWorkload(user));
     }
 
-    // ═══════════════════════════════════════════════════
-    // GET /api/workload/recommend/{teamId}?hours=8&requiredSkills=React,SQL
-    // When requiredSkills is absent → existing behavior (WorkloadRecommendationDto)
-    // When requiredSkills is present → skill-based suggestions (AssignmentSuggestionDto)
-    // ═══════════════════════════════════════════════════
-
     [HttpGet("recommend/{teamId}")]
     public async Task<IActionResult> Recommend(
         int teamId,
         [FromQuery] double hours = 8,
         [FromQuery] string? requiredSkills = null)
     {
-        // Validate Manager ownership
-        if (User.IsInRole("Manager") && !User.IsInRole("Admin"))
-        {
-            var userIdClaim = User.FindFirst("UserId")?.Value
-                              ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(userIdClaim, out var uid))
-            {
-                var team = await _db.Teams.FindAsync(teamId);
-                if (team == null) return NotFound();
-                if (team.ManagerId != uid)
-                    return StatusCode(403, new { message = "You can only view recommendations for teams you manage." });
-            }
-        }
-
-        var members = (await _db.Set<TeamMember>()
-            .Where(m => m.TeamId == teamId)
-            .Include(m => m.User).ThenInclude(u => u.AssignedTasks).ThenInclude(t => t.WorkLogs)
-            .Include(m => m.User).ThenInclude(u => u.WorkLogs)
-            .Include(m => m.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .ToListAsync())
-            .Where(m => m.User.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
-            .ToList();
+        // Get all active employees
+        var employees = await _db.Users
+            .Include(u => u.AssignedTasks).ThenInclude(t => t.WorkLogs)
+            .Include(u => u.WorkLogs)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
+            .ToListAsync();
 
         // ── If requiredSkills is provided → skill-based suggestions ──
         if (!string.IsNullOrWhiteSpace(requiredSkills))
@@ -208,9 +188,8 @@ public class WorkloadController : ControllerBase
                 .Select(s => s.ToLowerInvariant())
                 .ToList();
 
-            var suggestions = members.Select(m =>
+            var suggestions = employees.Select(user =>
             {
-                var user = m.User;
                 var current = ComputeWorkload(user);
 
                 // A. Skill Match Score (max 50)
@@ -225,11 +204,10 @@ public class WorkloadController : ControllerBase
                 var skillScore = matchPercentage / 100.0 * 50.0;
 
                 // B. Availability Score (max 30)
-                // Overloaded employees get 0; low-workload employees get up to 30
                 var availabilityScore = Math.Max(0, 1.0 - (current.Workload / 100.0)) * 30.0;
 
                 // C. Performance Score (max 10)
-                var performanceScore = ComputePerformanceNew(user) * (10.0 / 15.0); // normalize to max 10
+                var performanceScore = ComputePerformanceNew(user) * (10.0 / 15.0);
 
                 // D. Feedback Score (max 5)
                 var feedbackScore = ComputeFeedbackScore(user.UserId) * 0.5;
@@ -240,7 +218,6 @@ public class WorkloadController : ControllerBase
                 var total = Math.Min(100, Math.Round(skillScore + availabilityScore + performanceScore + feedbackScore + managerScore, 1));
 
                 // ── OVERLOAD PENALTY ──
-                // Heavily penalize employees who exceed weekly capacity
                 if (current.Workload > 120)
                     total = Math.Round(total * 0.4, 1);
                 else if (current.Workload > 100)
@@ -255,11 +232,9 @@ public class WorkloadController : ControllerBase
                 else
                     reason = "No skill match — consider for training";
 
-                // Add feedback context
                 if (feedbackScore >= 4) reason += " • Excellent feedback";
                 else if (feedbackScore >= 3) reason += " • Good feedback";
 
-                // Workload warning
                 var estHours = user.AssignedTasks.Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6).Sum(t => t.EstimatedHours);
                 string? warning = null;
                 if (current.Workload > 100) warning = "Overloaded";
@@ -267,13 +242,13 @@ public class WorkloadController : ControllerBase
 
                 return new AssignmentSuggestionDto
                 {
-                    UserId = m.UserId,
+                    UserId = user.UserId,
                     Name = current.Name,
                     SkillMatchPercentage = matchPercentage,
                     SkillScore = Math.Round(skillScore, 1),
                     AvailabilityScore = Math.Round(availabilityScore, 1),
                     PerformanceScore = Math.Round(performanceScore, 1),
-                    ConsistencyScore = 0, // folded into performance
+                    ConsistencyScore = 0,
                     FeedbackScore = Math.Round(feedbackScore, 1),
                     ManagerScore = Math.Round(managerScore, 1),
                     AssignmentScore = total,
@@ -292,12 +267,12 @@ public class WorkloadController : ControllerBase
         }
 
         // ── No requiredSkills → existing workload-only recommendation ──
-        var recommendations = members
-            .Select(m =>
+        var recommendations = employees
+            .Select(user =>
             {
-                var current = ComputeWorkload(m.User);
+                var current = ComputeWorkload(user);
 
-                var currentEffort = m.User.AssignedTasks.Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6).Sum(t => t.EstimatedHours);
+                var currentEffort = user.AssignedTasks.Where(t => t.Status != 3 && t.Status != 5 && t.Status != 6).Sum(t => t.EstimatedHours);
                 var projectedEffort = currentEffort + hours;
                 var projectedEffortScore = Math.Min(40.0, (projectedEffort / 40.0) * 40.0);
                 var projected = (int)Math.Min(100, Math.Round(
@@ -312,7 +287,7 @@ public class WorkloadController : ControllerBase
 
                 return new WorkloadRecommendationDto
                 {
-                    UserId = m.UserId,
+                    UserId = user.UserId,
                     Name = current.Name,
                     CurrentTasks = current.Tasks,
                     Workload = current.Workload,
@@ -453,7 +428,6 @@ public class WorkloadController : ControllerBase
     {
         var project = await _db.Tasks
             .Include(t => t.SubTasks)
-            .Include(t => t.Team)
             .FirstOrDefaultAsync(t => t.TaskId == projectId && t.ParentTaskId == null);
 
         if (project == null)
@@ -478,7 +452,6 @@ public class WorkloadController : ControllerBase
         {
             projectId,
             projectTitle = project.Title,
-            teamName = project.Team?.TeamName,
             status = project.Status,
             health,
             totalSubTasks = total,

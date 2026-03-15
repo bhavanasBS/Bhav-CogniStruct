@@ -26,8 +26,7 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
         [FromQuery] string? status,
-        [FromQuery] string? priority,
-        [FromQuery] int? teamId)
+        [FromQuery] string? priority)
     {
         var query = _db.Tasks.AsQueryable();
 
@@ -52,9 +51,6 @@ public class TasksController : ControllerBase
         if (!string.IsNullOrWhiteSpace(priority) && int.TryParse(priority, out var p))
             query = query.Where(t => t.Priority == p);
 
-        if (teamId.HasValue)
-            query = query.Where(t => t.TeamId == teamId.Value);
-
         var tasks = await query.OrderByDescending(t => t.CreatedDate)
             .Select(t => new TaskDto
             {
@@ -65,8 +61,6 @@ public class TasksController : ControllerBase
                 AssigneeName = t.Assignee != null ? t.Assignee.FirstName + " " + t.Assignee.LastName : null,
                 AssignerId = t.AssignerId,
                 AssignerName = t.Assigner != null ? t.Assigner.FirstName + " " + t.Assigner.LastName : null,
-                TeamId = t.TeamId,
-                TeamName = t.Team != null ? t.Team.TeamName : null,
                 Priority = t.Priority,
                 Status = t.Status,
                 Deadline = t.Deadline,
@@ -81,7 +75,8 @@ public class TasksController : ControllerBase
                 ParentTaskId = t.ParentTaskId,
                 IsProject = t.ParentTaskId == null,
                 SubTaskCount = t.SubTasks.Count,
-                CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == 3)
+                CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == 3),
+                TeamName = t.Project != null && t.Project.Team != null ? t.Project.Team.TeamName : null
             }).ToListAsync();
 
         return Ok(tasks);
@@ -93,7 +88,6 @@ public class TasksController : ControllerBase
         var task = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.Assigner)
-            .Include(t => t.Team)
             .Include(t => t.WorkLogs)
             .Include(t => t.SubTasks)
             .FirstOrDefaultAsync(t => t.TaskId == id);
@@ -130,22 +124,6 @@ public class TasksController : ControllerBase
             if (request.ParentTaskId.HasValue)
                 return BadRequest(new { message = "Managers can only create projects (parent tasks). Do not specify ParentTaskId." });
 
-            if (!request.TeamId.HasValue)
-                return BadRequest(new { message = "Team is required." });
-
-            var team = await _db.Teams
-                .Include(t => t.Members)
-                .FirstOrDefaultAsync(t => t.TeamId == request.TeamId.Value);
-            if (team == null)
-                return BadRequest(new { message = "Invalid team." });
-
-            // Manager must own the team (unless Admin)
-            if (User.IsInRole("Manager") && !User.IsInRole("Admin"))
-            {
-                if (team.ManagerId != currentUserId)
-                    return StatusCode(403, new { message = "You can only create tasks in teams you manage." });
-            }
-
             // Assignee must be a TeamLead
             if (!request.AssigneeId.HasValue)
                 return BadRequest(new { message = "Assignee (TeamLead) is required." });
@@ -160,10 +138,6 @@ public class TasksController : ControllerBase
                 ur.Role.RoleName == "TeamLead" || ur.Role.RoleName == "Team Lead");
             if (!assigneeIsTeamLead)
                 return BadRequest(new { message = "Manager can only assign projects to a TeamLead." });
-
-            // Assignee must be a member of the team
-            if (!team.Members.Any(m => m.UserId == request.AssigneeId.Value))
-                return BadRequest(new { message = "Assignee (TeamLead) does not belong to the selected team." });
         }
         // ══════════════════════════════════════════════
         // B. TEAMLEAD PATH — Create SubTask
@@ -175,7 +149,6 @@ public class TasksController : ControllerBase
                 return BadRequest(new { message = "TeamLead can only create subtasks. ParentTaskId is required." });
 
             var parent = await _db.Tasks
-                .Include(t => t.Team).ThenInclude(tm => tm.Members)
                 .FirstOrDefaultAsync(t => t.TaskId == request.ParentTaskId.Value);
             if (parent == null)
                 return BadRequest(new { message = "Parent task not found." });
@@ -196,9 +169,6 @@ public class TasksController : ControllerBase
             if (parent.AssigneeId != currentUserId)
                 return StatusCode(403, new { message = "You can only create subtasks under projects assigned to you." });
 
-            // Inherit team from parent
-            request.TeamId = parent.TeamId;
-
             // Validate assignee
             if (!request.AssigneeId.HasValue)
                 return BadRequest(new { message = "Assignee is required." });
@@ -215,9 +185,15 @@ public class TasksController : ControllerBase
             if (!assigneeRoles.Contains("Employee"))
                 return BadRequest(new { message = "Subtasks can only be assigned to employees." });
 
-            // Assignee must belong to parent's team
-            if (parent.Team?.Members != null && !parent.Team.Members.Any(m => m.UserId == request.AssigneeId.Value))
-                return BadRequest(new { message = "Assignee does not belong to the project's team." });
+            // Validate assignee is a member of the project
+            if (parent.ProjectId.HasValue)
+            {
+                var isProjectMember = await _db.ProjectMembers
+                    .AnyAsync(pm => pm.ProjectId == parent.ProjectId.Value && pm.UserId == request.AssigneeId.Value);
+                if (!isProjectMember)
+                    return BadRequest(new { message = "Assignee must be a member of the project. Only project members can be assigned tasks." });
+            }
+
 
             // Required skills are mandatory for subtasks
             if (string.IsNullOrWhiteSpace(request.RequiredSkills))
@@ -277,7 +253,6 @@ public class TasksController : ControllerBase
             Description = request.Description ?? string.Empty,
             AssigneeId = request.AssigneeId,
             AssignerId = currentUserId,
-            TeamId = request.TeamId,
             Priority = request.Priority,
             Status = 0, // Pending
             Deadline = request.Deadline,
@@ -295,7 +270,6 @@ public class TasksController : ControllerBase
         task = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.Assigner)
-            .Include(t => t.Team)
             .Include(t => t.SubTasks)
             .FirstAsync(t => t.TaskId == task.TaskId);
 
@@ -305,7 +279,7 @@ public class TasksController : ControllerBase
             TaskId = task.TaskId,
             PerformedByUserId = currentUserId,
             Action = task.ParentTaskId == null ? "project_created" : "subtask_created",
-            Details = $"Title: {task.Title}. Assigned to UserId: {task.AssigneeId}. Team: {task.TeamId}."
+            Details = $"Title: {task.Title}. Assigned to UserId: {task.AssigneeId}."
         });
 
         // Create notification for assignee
@@ -328,17 +302,17 @@ public class TasksController : ControllerBase
     [HttpPatch("projects/{id}")]
     public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateTaskRequest request)
     {
-        var task = await _db.Tasks.Include(t => t.Team).FirstOrDefaultAsync(t => t.TaskId == id);
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == id);
         if (task == null) return NotFound();
 
         // Must be a project (no parent)
         if (task.ParentTaskId != null)
             return BadRequest(new { message = "Managers can only update projects, not subtasks." });
 
-        // Manager must own the team
+        // Manager must be the creator of the project
         var currentUserId = GetCurrentUserId();
-        if (task.Team?.ManagerId != currentUserId)
-            return StatusCode(403, new { message = "You can only update projects in teams you manage." });
+        if (task.AssignerId != currentUserId)
+            return StatusCode(403, new { message = "You can only update projects you created." });
 
         task.Title = request.Title ?? task.Title;
         task.Description = request.Description ?? task.Description;
@@ -353,7 +327,7 @@ public class TasksController : ControllerBase
         await _db.SaveChangesAsync();
 
         task = await _db.Tasks
-            .Include(t => t.Assignee).Include(t => t.Assigner).Include(t => t.Team).Include(t => t.SubTasks)
+            .Include(t => t.Assignee).Include(t => t.Assigner).Include(t => t.SubTasks)
             .FirstAsync(t => t.TaskId == id);
 
         return Ok(MapToDto(task));
@@ -393,7 +367,7 @@ public class TasksController : ControllerBase
         await _db.SaveChangesAsync();
 
         task = await _db.Tasks
-            .Include(t => t.Assignee).Include(t => t.Assigner).Include(t => t.Team).Include(t => t.SubTasks)
+            .Include(t => t.Assignee).Include(t => t.Assigner).Include(t => t.SubTasks)
             .FirstAsync(t => t.TaskId == id);
 
         return Ok(MapToDto(task));
@@ -583,7 +557,6 @@ public class TasksController : ControllerBase
     {
         var task = await _db.Tasks
             .Include(t => t.ParentTask)
-            .Include(t => t.Team)
             .FirstOrDefaultAsync(t => t.TaskId == id);
         if (task == null) return NotFound();
 
@@ -610,13 +583,11 @@ public class TasksController : ControllerBase
             }
             else if (User.IsInRole("Manager"))
             {
-                // Manager: any task in teams they manage
-                var teamId = task.TeamId ?? task.ParentTask?.TeamId;
-                if (teamId == null)
-                    return StatusCode(403, new { message = "Cannot determine team for this task." });
-                var team = await _db.Teams.FindAsync(teamId);
-                if (team?.ManagerId != actorId)
-                    return StatusCode(403, new { message = "You can only pause tasks in teams you manage." });
+                // Manager: must be the project creator
+                var projectId = task.ParentTaskId ?? task.TaskId;
+                var project = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == projectId);
+                if (project?.AssignerId != actorId)
+                    return StatusCode(403, new { message = "You can only pause tasks in projects you created." });
             }
         }
         // Admin bypasses all checks
@@ -652,7 +623,6 @@ public class TasksController : ControllerBase
     {
         var task = await _db.Tasks
             .Include(t => t.ParentTask)
-            .Include(t => t.Team)
             .FirstOrDefaultAsync(t => t.TaskId == id);
         if (task == null) return NotFound();
 
@@ -680,13 +650,11 @@ public class TasksController : ControllerBase
             }
             else if (User.IsInRole("Manager"))
             {
-                // Manager: any task in teams they manage
-                var teamId = task.TeamId ?? task.ParentTask?.TeamId;
-                if (teamId == null)
-                    return StatusCode(403, new { message = "Cannot determine team for this task." });
-                var team = await _db.Teams.FindAsync(teamId);
-                if (team?.ManagerId != actorId)
-                    return StatusCode(403, new { message = "You can only resume tasks in teams you manage." });
+                // Manager: must be the project creator
+                var projectId = task.ParentTaskId ?? task.TaskId;
+                var project = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == projectId);
+                if (project?.AssignerId != actorId)
+                    return StatusCode(403, new { message = "You can only resume tasks in projects you created." });
             }
         }
         // Admin bypasses all checks
@@ -731,7 +699,6 @@ public class TasksController : ControllerBase
         var tasks = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.Assigner)
-            .Include(t => t.Team)
             .Where(t => t.AssigneeId == employeeId)
             .OrderByDescending(t => t.CreatedDate)
             .ToListAsync();
@@ -745,22 +712,7 @@ public class TasksController : ControllerBase
         var tasks = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.Assigner)
-            .Include(t => t.Team)
             .Where(t => t.AssignerId == managerId)
-            .OrderByDescending(t => t.CreatedDate)
-            .ToListAsync();
-
-        return Ok(tasks.Select(MapToDto));
-    }
-
-    [HttpGet("team/{teamId}")]
-    public async Task<IActionResult> GetByTeam(int teamId)
-    {
-        var tasks = await _db.Tasks
-            .Include(t => t.Assignee)
-            .Include(t => t.Assigner)
-            .Include(t => t.Team)
-            .Where(t => t.TeamId == teamId)
             .OrderByDescending(t => t.CreatedDate)
             .ToListAsync();
 
@@ -789,7 +741,6 @@ public class TasksController : ControllerBase
         var subtasks = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.Assigner)
-            .Include(t => t.Team)
             .Include(t => t.WorkLogs)
             .Include(t => t.SubTasks)
             .Where(t => t.ParentTaskId == id)
@@ -808,8 +759,7 @@ public class TasksController : ControllerBase
         AssigneeName = t.Assignee != null ? $"{t.Assignee.FirstName} {t.Assignee.LastName}" : null,
         AssignerId = t.AssignerId,
         AssignerName = t.Assigner != null ? $"{t.Assigner.FirstName} {t.Assigner.LastName}" : null,
-        TeamId = t.TeamId,
-        TeamName = t.Team?.TeamName,
+
         Priority = t.Priority,
         Status = t.Status,
         Deadline = t.Deadline,
@@ -827,7 +777,8 @@ public class TasksController : ControllerBase
         ParentTaskId = t.ParentTaskId,
         IsProject = t.ParentTaskId == null,
         SubTaskCount = t.SubTasks?.Count ?? 0,
-        CompletedSubTaskCount = t.SubTasks?.Count(st => st.Status == 3) ?? 0
+        CompletedSubTaskCount = t.SubTasks?.Count(st => st.Status == 3) ?? 0,
+        TeamName = t.Project?.Team?.TeamName
     };
 
     /// <summary>Notify TeamLead and Manager when SLA is breached</summary>
@@ -841,14 +792,9 @@ public class TasksController : ControllerBase
             var parent = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == task.ParentTaskId);
             if (parent?.AssigneeId != null)
                 notifyUserIds.Add(parent.AssigneeId.Value);
-        }
-
-        // Notify team Manager
-        if (task.TeamId.HasValue)
-        {
-            var team = await _db.Teams.FirstOrDefaultAsync(t => t.TeamId == task.TeamId);
-            if (team?.ManagerId != null)
-                notifyUserIds.Add(team.ManagerId.Value);
+            // Notify project creator (Manager)
+            if (parent?.AssignerId != null)
+                notifyUserIds.Add(parent.AssignerId.Value);
         }
 
         foreach (var uid in notifyUserIds)
@@ -896,7 +842,6 @@ public class TasksController : ControllerBase
         var task = await _db.Tasks
             .Include(t => t.Assignee)
             .Include(t => t.ParentTask)
-            .Include(t => t.Team)
             .FirstOrDefaultAsync(t => t.TaskId == id);
 
         if (task == null) return NotFound(new { message = "Task not found." });
@@ -923,16 +868,6 @@ public class TasksController : ControllerBase
             ur.Role.RoleName.Equals("Employee", StringComparison.OrdinalIgnoreCase));
         if (!isEmployee)
             return BadRequest(new { message = "New assignee must be an Employee." });
-
-        // Verify new assignee is in the same team
-        var teamId = task.TeamId ?? task.ParentTask?.TeamId;
-        if (teamId != null)
-        {
-            var isMember = await _db.TeamMembers
-                .AnyAsync(tm => tm.TeamId == teamId && tm.UserId == request.NewAssigneeId);
-            if (!isMember)
-                return BadRequest(new { message = "New assignee must be a member of the same team." });
-        }
 
         var actorId = GetCurrentUserId();
         var actor = await _db.Users.FindAsync(actorId);
@@ -988,33 +923,55 @@ public class TasksController : ControllerBase
             .FirstOrDefaultAsync(t => t.TaskId == id);
         if (task == null) return NotFound();
 
-        var teamId = task.TeamId ?? task.ParentTask?.TeamId;
-        if (teamId == null)
-            return Ok(Array.Empty<object>());
+        // Determine the project (parent task) to find eligible assignees
+        var projectTaskId = task.ParentTaskId ?? task.TaskId;
 
-        // Get employee role ids
+        // Find the Project entity linked to this task
+        var projectTask = task.ParentTaskId.HasValue ? task.ParentTask : task;
+        var projectId = projectTask?.ProjectId;
+
+        if (projectId.HasValue)
+        {
+            // Return only project members with Employee role
+            var employeeRoleNames = new[] { "Employee" };
+            var members = await _db.ProjectMembers
+                .Where(pm => pm.ProjectId == projectId.Value)
+                .Include(pm => pm.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .Where(pm => pm.User.IsActive)
+                .Where(pm => pm.User.UserRoles.Any(ur => employeeRoleNames.Contains(ur.Role.RoleName)))
+                .Select(pm => new
+                {
+                    userId = pm.UserId,
+                    name = pm.User.FirstName + " " + pm.User.LastName,
+                    pm.User.Email,
+                    role = pm.User.UserRoles.FirstOrDefault()!.Role.RoleName
+                })
+                .ToListAsync();
+            return Ok(members);
+        }
+
+        // Fallback: if no project linked, return all active employees
         var employeeRoleIds = await _db.Roles
             .Where(r => r.RoleName == "Employee")
             .Select(r => r.RoleId)
             .ToListAsync();
 
-        // Get team member user IDs (active employees only, exclude current assignee)
-        var members = await _db.TeamMembers
-            .Where(tm => tm.TeamId == teamId)
-            .Include(tm => tm.User)
-                .ThenInclude(u => u.UserRoles)
-            .Where(tm => tm.User.IsActive)
-            .Where(tm => tm.User.UserRoles.Any(ur => employeeRoleIds.Contains(ur.RoleId)))
-            .Where(tm => tm.UserId != task.AssigneeId) // exclude current
-            .Select(tm => new
+        var allMembers = await _db.Users
+            .Include(u => u.UserRoles)
+            .Where(u => u.IsActive)
+            .Where(u => u.UserRoles.Any(ur => employeeRoleIds.Contains(ur.RoleId)))
+            .Select(u => new
             {
-                tm.UserId,
-                name = tm.User.FirstName + " " + tm.User.LastName,
-                tm.User.Email
+                userId = u.UserId,
+                name = u.FirstName + " " + u.LastName,
+                u.Email,
+                role = u.UserRoles.FirstOrDefault()!.Role.RoleName
             })
             .ToListAsync();
 
-        return Ok(members);
+        return Ok(allMembers);
     }
 
     private int GetCurrentUserId()

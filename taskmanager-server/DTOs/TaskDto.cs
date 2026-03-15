@@ -9,8 +9,7 @@ public class TaskDto
     public string? AssigneeName { get; set; }
     public int? AssignerId { get; set; }
     public string? AssignerName { get; set; }
-    public int? TeamId { get; set; }
-    public string? TeamName { get; set; }
+
     public int Priority { get; set; }
     public int Status { get; set; }
     public DateTime? Deadline { get; set; }
@@ -30,6 +29,7 @@ public class TaskDto
     public int SubTaskCount { get; set; }
     public int CompletedSubTaskCount { get; set; }
     public bool IsProject { get; set; }
+    public string? TeamName { get; set; }
 }
 
 public class CreateTaskRequest
@@ -38,7 +38,7 @@ public class CreateTaskRequest
     public string? Description { get; set; }
     public int? AssigneeId { get; set; }
     public int? AssignerId { get; set; }
-    public int? TeamId { get; set; }
+
     public int Priority { get; set; } = 1;
     public DateTime? Deadline { get; set; }
     public double EstimatedHours { get; set; }
@@ -52,7 +52,7 @@ public class UpdateTaskRequest
     public string? Title { get; set; }
     public string? Description { get; set; }
     public int? AssigneeId { get; set; }
-    public int? TeamId { get; set; }
+
     public int? Priority { get; set; }
     public int? Status { get; set; }
     public DateTime? Deadline { get; set; }

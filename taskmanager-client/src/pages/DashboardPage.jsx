@@ -19,7 +19,6 @@ import {
 import { useAuthContext } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import { userApi } from '../api/userApi';
-import { teamApi } from '../api/teamApi';
 import { taskApi } from '../api/taskApi';
 import toast from 'react-hot-toast';
 
@@ -67,7 +66,6 @@ const DashboardPage = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState([]);
-  const [teams, setTeams] = useState([]);
   const [tasks, setTasks] = useState([]);
 
   const [now, setNow] = useState(new Date());
@@ -80,13 +78,11 @@ const DashboardPage = () => {
     const fetchAll = async () => {
       try {
         setIsLoading(true);
-        const [usersRes, teamsRes, tasksRes] = await Promise.all([
+        const [usersRes, tasksRes] = await Promise.all([
           userApi.getAll(),
-          teamApi.getAll(),
           taskApi.getAll(),
         ]);
         setUsers(usersRes.data || []);
-        setTeams(teamsRes.data || []);
         setTasks(tasksRes.data?.items || tasksRes.data || []);
       } catch (error) {
         console.error('Dashboard fetch error:', error);
@@ -223,12 +219,11 @@ const DashboardPage = () => {
           onClick={() => navigate('/users')}
         />
         <StatCard
-          title="Total Teams"
-          value={teams.length}
+          title="Total Projects"
+          value={Array.isArray(tasks) ? tasks.filter(t => !t.parentTaskId).length : 0}
           subtitle="Across the organization"
           icon={UsersRound}
           gradient="from-emerald-500 to-emerald-600"
-          onClick={() => navigate('/teams')}
         />
         <StatCard
           title="Total Tasks"
@@ -335,28 +330,22 @@ const DashboardPage = () => {
             </div>
           </Card>
 
-          {/* Team Overview */}
+          {/* Project Overview */}
           <Card>
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Team Overview</h3>
-                <p className="text-sm text-slate-500">{teams.length} teams across the organization</p>
+                <h3 className="text-lg font-semibold text-slate-900">Project Overview</h3>
+                <p className="text-sm text-slate-500">{Array.isArray(tasks) ? tasks.filter(t => !t.parentTaskId).length : 0} projects across the organization</p>
               </div>
-              <button
-                onClick={() => navigate('/teams')}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
-              >
-                Manage Teams <ChevronRight className="w-4 h-4" />
-              </button>
             </div>
-            {teams.length === 0 ? (
+            {(!Array.isArray(tasks) || tasks.filter(t => !t.parentTaskId).length === 0) ? (
               <div className="py-8 text-center text-slate-400">
                 <UsersRound className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p>No teams created yet</p>
+                <p>No projects created yet</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {teams.slice(0, 6).map((team, idx) => {
+                {tasks.filter(t => !t.parentTaskId).slice(0, 6).map((project, idx) => {
                   const gradients = [
                     'from-indigo-500 via-indigo-600 to-purple-700',
                     'from-emerald-500 via-teal-600 to-cyan-700',
@@ -366,16 +355,12 @@ const DashboardPage = () => {
                     'from-sky-500 via-blue-600 to-indigo-700',
                   ];
                   const bgGradient = gradients[idx % gradients.length];
-                  const memberCount = team.memberCount || team.members?.length || 0;
-                  const managerName = team.managerName || team.manager?.name || null;
-
                   return (
                     <div
-                      key={team.teamId || team.id}
+                      key={project.taskId || project.id}
                       className="group relative rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all duration-300 cursor-pointer"
-                      onClick={() => navigate(`/teams/${team.teamId || team.id}`)}
+                      onClick={() => navigate(`/tasks/${project.taskId || project.id}`)}
                     >
-                      {/* Gradient Header */}
                       <div className={`bg-gradient-to-r ${bgGradient} px-4 py-3 relative overflow-hidden`}>
                         <div className="absolute inset-0 overflow-hidden">
                           <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
@@ -388,40 +373,27 @@ const DashboardPage = () => {
                             </div>
                             <div>
                               <h4 className="text-sm font-bold text-white truncate max-w-[140px]">
-                                {team.name || team.teamName || 'Unnamed Team'}
+                                {project.title || 'Untitled Project'}
                               </h4>
-                              {team.description && (
-                                <p className="text-[10px] text-white/70 truncate max-w-[140px]">{team.description}</p>
-                              )}
                             </div>
                           </div>
                           <ArrowUpRight className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                         </div>
                       </div>
-
-                      {/* Card Body */}
                       <div className="px-4 py-3 bg-white space-y-2.5">
-                        {/* Manager */}
                         <div className="flex items-center gap-2">
                           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0">
                             <UserCheck className="w-3 h-3 text-slate-500" />
                           </div>
                           <span className="text-xs text-slate-500">
-                            {managerName ? (
-                              <>Led by <span className="font-semibold text-slate-700">{managerName}</span></>
+                            {project.assignerName ? (
+                              <>Created by <span className="font-semibold text-slate-700">{project.assignerName}</span></>
                             ) : (
-                              <span className="text-slate-400 italic">No manager assigned</span>
+                              <span className="text-slate-400 italic">No creator assigned</span>
                             )}
                           </span>
                         </div>
-
-                        {/* Stats Row */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg">
-                            <Users className="w-3 h-3 text-slate-500" />
-                            <span className="text-xs font-semibold text-slate-700">{memberCount}</span>
-                            <span className="text-[10px] text-slate-400">members</span>
-                          </div>
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-[10px] font-medium text-emerald-600">Active</span>
@@ -514,10 +486,10 @@ const DashboardPage = () => {
               />
               <QuickAction
                 icon={UsersRound}
-                label="Manage Teams"
-                description="Create and organize teams"
+                label="View Projects"
+                description="Browse and manage projects"
                 gradient="from-emerald-500 to-emerald-600"
-                onClick={() => navigate('/teams')}
+                onClick={() => navigate('/tasks')}
               />
             </div>
           </Card>

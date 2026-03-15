@@ -7,13 +7,13 @@ import { TASK_PRIORITY_LABELS } from '../../utils/constants';
 import { User, Users2, Flag, AlertTriangle, Zap } from 'lucide-react';
 import api from '../../api/axiosInstance';
 
-const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], teams = [], isLoading, onTeamChange }) => {
+const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], isLoading }) => {
   const isEdit = !!task;
   const [form, setForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
     assignedTo: task?.assignedTo || '',
-    teamId: task?.teamId || '',
+
     priority: task?.priority ?? 1,
     deadline: task?.deadline ? new Date(task.deadline).toISOString().slice(0, 16) : '',
     estimatedHours: task?.estimatedHours || '',
@@ -32,12 +32,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
   const handleSelectChange = (field, value) => {
     setForm((p) => ({ ...p, [field]: value }));
     setErrors((p) => ({ ...p, [field]: '' }));
-    // When team changes, reset assignee and load team members
-    if (field === 'teamId' && onTeamChange) {
-      setForm((p) => ({ ...p, assignedTo: '' }));
-      setAssigneeWorkload(null);
-      onTeamChange(value);
-    }
+
     // When assignee changes, fetch their workload
     if (field === 'assignedTo' && value) {
       fetchWorkload(value);
@@ -87,17 +82,11 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
     onSubmit({ ...form, priority: Number(form.priority), estimatedHours: Number(form.estimatedHours) });
   };
 
-  const employeeList = employees;
-  const teamList = teams;
+
 
   const employeeOptions = [
     { value: '', label: 'Select employee' },
-    ...employeeList.map(e => ({ value: e.userId, label: `${e.firstName} ${e.lastName}` }))
-  ];
-
-  const teamOptions = [
-    { value: '', label: 'Select team' },
-    ...teamList.map(t => ({ value: t.teamId, label: t.teamName }))
+    ...employees.map(e => ({ value: e.userId, label: `${e.firstName} ${e.lastName}` }))
   ];
 
   const priorityOptions = Object.entries(TASK_PRIORITY_LABELS).map(([key, label]) => ({
@@ -186,16 +175,6 @@ const TaskForm = ({ isOpen, onClose, onSubmit, task = null, employees = [], team
                 )}
               </div>
             )}
-          </div>
-          <div>
-            <label className="label">Team</label>
-            <CustomSelect
-              value={form.teamId}
-              onChange={(val) => handleSelectChange('teamId', val)}
-              options={teamOptions}
-              placeholder="Select team"
-              icon={Users2}
-            />
           </div>
         </div>
 

@@ -253,15 +253,15 @@ public class PauseRequestsController : ControllerBase
             CreatedDate = DateTime.UtcNow
         });
 
-        // Notify Manager (team owner)
-        if (task.TeamId.HasValue)
+        // Notify Manager (project creator)
+        if (task.ParentTaskId.HasValue)
         {
-            var team = await _db.Teams.FindAsync(task.TeamId.Value);
-            if (team?.ManagerId != null)
+            var parentTask = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == task.ParentTaskId);
+            if (parentTask?.AssignerId != null)
             {
                 _db.Notifications.Add(new Notification
                 {
-                    UserId = team.ManagerId.Value,
+                    UserId = parentTask.AssignerId.Value,
                     Title = "Pause Approved",
                     Type = "pause_approved",
                     Message = $"Pause request approved for task \"{task.Title}\".",

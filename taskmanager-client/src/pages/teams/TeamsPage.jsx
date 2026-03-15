@@ -1,150 +1,148 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users2, Users, CheckCircle, Building2, X, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
-import Button from '../../components/common/Button';
-import SearchBar from '../../components/common/SearchBar';
-import TeamList from '../../components/teams/TeamList';
-import TeamForm from '../../components/teams/TeamForm';
-import Card from '../../components/common/Card';
 import { useNavigate } from 'react-router-dom';
+import { Users, Plus, Search, Trash2, Edit2, X, Loader2, FolderKanban, UserCheck } from 'lucide-react';
 import { teamApi } from '../../api/teamApi';
+import { userApi } from '../../api/userApi';
 import toast from 'react-hot-toast';
 
 const TeamsPage = () => {
+  const navigate = useNavigate();
   const [teams, setTeams] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
+  const [formData, setFormData] = useState({ teamName: '', description: '', managerId: '' });
   const [managers, setManagers] = useState([]);
-  const navigate = useNavigate();
-
-  // Delete confirmation state
-  const [deleteTeam, setDeleteTeam] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Fetch managers for the dropdown
-  const fetchManagers = async () => {
-    try {
-      const response = await teamApi.managerSearch('');
-      setManagers(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch managers:', error);
-    }
-  };
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
   const fetchTeams = async () => {
     try {
       setIsLoading(true);
-      const params = search ? { search } : {};
-      const response = await teamApi.getAll(params);
-      setTeams(response.data.items || response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch teams:', error);
+      const res = await teamApi.getAll(search || undefined);
+      setTeams(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch teams:', err);
       toast.error('Failed to load teams');
-      setTeams([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchTeams();
-  }, [search]);
-
-  const handleCreateTeam = async (data) => {
+  const fetchManagers = async () => {
     try {
-      await teamApi.create(data);
-      toast.success('Team created successfully');
-      setShowForm(false);
-      setEditingTeam(null);
-      fetchTeams();
-    } catch (error) {
-      console.error('Failed to create team:', error);
-      toast.error('Failed to create team');
+      const res = await userApi.getAll({ role: 'Manager' });
+      const data = res.data?.items || res.data || [];
+      setManagers(data);
+    } catch (err) {
+      console.error('Failed to fetch managers:', err);
     }
   };
 
-  const handleUpdateTeam = async (data) => {
-    if (!editingTeam) return;
-    const teamId = editingTeam.id || editingTeam.teamId;
-    try {
-      await teamApi.update(teamId, data);
-      toast.success('Team updated successfully');
-      setShowForm(false);
-      setEditingTeam(null);
-      fetchTeams();
-    } catch (error) {
-      console.error('Failed to update team:', error);
-      toast.error('Failed to update team');
-    }
-  };
+  useEffect(() => { fetchTeams(); }, [search]);
 
-  const handleEdit = (team) => {
-    setEditingTeam(team);
+  const openCreateModal = () => {
+    setEditingTeam(null);
+    setFormData({ teamName: '', description: '', managerId: '' });
     fetchManagers();
-    setShowForm(true);
+    setShowCreateModal(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteTeam) return;
-    const teamId = deleteTeam.id || deleteTeam.teamId;
+  const openEditModal = (team) => {
+    setEditingTeam(team);
+    setFormData({
+      teamName: team.teamName,
+      description: team.description || '',
+      managerId: team.managerId || '',
+    });
+    fetchManagers();
+    setShowCreateModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.teamName.trim()) {
+      toast.error('Team name is required');
+      return;
+    }
     try {
-      setIsDeleting(true);
-      await teamApi.delete(teamId);
-      toast.success(`"${deleteTeam.teamName}" has been deleted`);
-      setDeleteTeam(null);
+      setSaving(true);
+      const payload = {
+        teamName: formData.teamName.trim(),
+        description: formData.description.trim() || null,
+        managerId: formData.managerId ? parseInt(formData.managerId) : null,
+      };
+      if (editingTeam) {
+        await teamApi.update(editingTeam.id, payload);
+        toast.success('Team updated successfully');
+      } else {
+        await teamApi.create(payload);
+        toast.success('Team created successfully');
+      }
+      setShowCreateModal(false);
       fetchTeams();
-    } catch (error) {
-      console.error('Failed to delete team:', error);
-      const msg = error.response?.data?.message || 'Failed to delete team';
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to save team';
       toast.error(msg);
     } finally {
-      setIsDeleting(false);
+      setSaving(false);
     }
   };
 
-  const activeTeams = teams.filter(t => t.isActive !== false).length;
-  const totalMembers = teams.reduce((acc, t) => acc + (t.memberCount || 0), 0);
+  const handleDelete = async (team) => {
+    if (!window.confirm(`Delete team "${team.teamName}"? This cannot be undone.`)) return;
+    try {
+      setDeleting(team.id);
+      await teamApi.delete(team.id);
+      toast.success('Team deleted');
+      fetchTeams();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete team';
+      toast.error(msg);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Stats
+  const totalMembers = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0);
+  const activeTeams = teams.filter(t => t.isActive).length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl p-6 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-500 to-violet-500 rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
           <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
         </div>
-
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <Users2 className="w-7 h-7 text-white" />
+              <Users className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                Team Management
-              </h1>
-              <p className="text-white/80 text-sm mt-0.5">Organize and manage your teams effectively</p>
+              <h1 className="text-2xl font-bold">Team Management</h1>
+              <p className="text-white/80 text-sm mt-0.5">Create and manage teams, assign members and projects</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button
-              icon={Plus}
-              onClick={() => { setEditingTeam(null); fetchManagers(); setShowForm(true); }}
-              className="!bg-white !text-emerald-600 hover:!bg-white/90"
-            >
-              New Team
-            </Button>
-          </div>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-white/90 transition-all cursor-pointer shadow-lg"
+          >
+            <Plus className="w-4 h-4" />
+            Create Team
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-800">{teams.length}</p>
@@ -152,21 +150,10 @@ const TeamsPage = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-800">{activeTeams}</p>
-              <p className="text-xs text-slate-500">Active Teams</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <UserCheck className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-800">{totalMembers}</p>
@@ -174,117 +161,198 @@ const TeamsPage = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-4">
-          <SearchBar placeholder="Search teams..." onSearch={setSearch} className="flex-1 max-w-md" />
-          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium">
-            <Users2 className="h-4 w-4" />
-            {teams.length} teams
+        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center">
+              <FolderKanban className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-800">{activeTeams}</p>
+              <p className="text-xs text-slate-500">Active Teams</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Team List */}
-      <Card className="overflow-hidden">
-        <TeamList
-          teams={teams}
-          isLoading={isLoading}
-          onSelect={(team) => navigate(`/teams/${team.id || team.teamId}`)}
-          onEdit={handleEdit}
-          onDelete={(team) => setDeleteTeam(team)}
-        />
-      </Card>
+      {/* Search */}
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search teams..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+          />
+        </div>
+      </div>
 
-      {/* Create / Edit Team Form Modal */}
-      <TeamForm
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingTeam(null); }}
-        onSubmit={editingTeam ? handleUpdateTeam : handleCreateTeam}
-        team={editingTeam}
-        managers={managers}
-      />
-
-      {/* Delete Confirmation Modal */}
-      {deleteTeam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTeam(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
-                  <Trash2 className="w-5 h-5 text-white" />
+      {/* Team Cards */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 text-lg font-medium">No teams found</p>
+          <p className="text-slate-400 text-sm mt-1">Create your first team to get started</p>
+          <button
+            onClick={openCreateModal}
+            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Create Team
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {teams.map((team) => (
+            <div
+              key={team.id}
+              className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group cursor-pointer"
+              onClick={() => navigate(`/teams/${team.id}`)}
+            >
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                      {team.teamName?.charAt(0)?.toUpperCase() || 'T'}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        {team.teamName}
+                      </h3>
+                      {team.managerName && (
+                        <p className="text-xs text-slate-400 mt-0.5">Led by {team.managerName}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${team.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                    {team.isActive ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Delete Team</h2>
-                  <p className="text-xs text-slate-400">This action cannot be undone</p>
+
+                {team.description && (
+                  <p className="text-sm text-slate-500 mb-3 line-clamp-2">{team.description}</p>
+                )}
+
+                <div className="flex items-center gap-4 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>{team.memberCount || 0} members</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <FolderKanban className="w-3.5 h-3.5" />
+                    <span>{team.projectCount || 0} projects</span>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => !isDeleting && setDeleteTeam(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
+
+              <div className="flex items-center border-t border-slate-100 divide-x divide-slate-100">
+                <button
+                  onClick={(e) => { e.stopPropagation(); openEditModal(team); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all cursor-pointer"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(team); }}
+                  disabled={deleting === team.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50/50 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {deleting === team.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCreateModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {editingTeam ? 'Edit Team' : 'Create Team'}
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    {editingTeam ? 'Update team details' : 'Add a new team to the organization'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="px-6 py-5">
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-red-800 font-medium">
-                    Are you sure you want to delete "{deleteTeam.teamName}"?
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">
-                    This will permanently remove the team, including all member associations. Tasks assigned to this team will not be deleted but will lose their team reference.
-                  </p>
-                </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Team Name *</label>
+                <input
+                  type="text"
+                  value={formData.teamName}
+                  onChange={(e) => setFormData({ ...formData, teamName: e.target.value })}
+                  placeholder="Enter team name"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                  autoFocus
+                />
               </div>
 
-              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-500">Team:</span>
-                  <span className="font-semibold text-slate-800">{deleteTeam.teamName}</span>
-                </div>
-                {deleteTeam.managerName && (
-                  <div className="flex items-center gap-2 text-sm mt-1">
-                    <span className="text-slate-500">Manager:</span>
-                    <span className="font-medium text-slate-700">{deleteTeam.managerName}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm mt-1">
-                  <span className="text-slate-500">Members:</span>
-                  <span className="font-medium text-slate-700">{deleteTeam.memberCount || 0}</span>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of the team"
+                  rows={3}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 resize-none"
+                />
               </div>
-            </div>
 
-            {/* Footer */}
-            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={() => !isDeleting && setDeleteTeam(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                {isDeleting ? 'Deleting...' : 'Delete Team'}
-              </button>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Manager / Team Lead</label>
+                <select
+                  value={formData.managerId}
+                  onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 cursor-pointer"
+                >
+                  <option value="">Select a manager</option>
+                  {managers.map((m) => (
+                    <option key={m.id || m.userId} value={m.id || m.userId}>
+                      {m.firstName ? `${m.firstName} ${m.lastName}` : m.name} — {m.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {editingTeam ? 'Update Team' : 'Create Team'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

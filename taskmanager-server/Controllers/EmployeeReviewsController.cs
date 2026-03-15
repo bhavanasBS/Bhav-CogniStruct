@@ -33,20 +33,22 @@ public class EmployeeReviewsController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
 
-        // Verify the manager manages a team the employee belongs to
-        var managerTeamIds = await _db.Teams
-            .Where(t => t.ManagerId == currentUserId)
-            .Select(t => t.TeamId)
+        // Verify the manager manages a project the employee is part of
+        var managerProjectIds = await _db.Tasks
+            .Where(t => t.AssignerId == currentUserId && t.ParentTaskId == null)
+            .Select(t => t.TaskId)
             .ToListAsync();
 
-        if (!managerTeamIds.Any())
-            return StatusCode(403, new { message = "You do not manage any teams." });
+        if (!managerProjectIds.Any())
+            return StatusCode(403, new { message = "You do not manage any projects." });
 
-        var isEmployeeInTeam = await _db.Set<TeamMember>()
-            .AnyAsync(tm => managerTeamIds.Contains(tm.TeamId) && tm.UserId == request.EmployeeId);
+        var isEmployeeInProject = await _db.Tasks
+            .AnyAsync(t => t.ParentTaskId.HasValue
+                        && managerProjectIds.Contains(t.ParentTaskId.Value)
+                        && t.AssigneeId == request.EmployeeId);
 
-        if (!isEmployeeInTeam)
-            return StatusCode(403, new { message = "You can only review employees in your teams." });
+        if (!isEmployeeInProject)
+            return StatusCode(403, new { message = "You can only review employees in your projects." });
 
         // Validate score
         if (request.PerformanceScore < 0 || request.PerformanceScore > 100)

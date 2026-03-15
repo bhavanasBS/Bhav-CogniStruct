@@ -35,7 +35,7 @@ public class TaskAttachmentsController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "No file provided." });
 
-        var task = await _db.Tasks.Include(t => t.Team).FirstOrDefaultAsync(t => t.TaskId == taskId);
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.TaskId == taskId);
         if (task == null) return NotFound(new { message = "Task not found." });
 
         var userId = GetUserId();
@@ -58,8 +58,8 @@ public class TaskAttachmentsController : ControllerBase
         {
             if (task.ParentTaskId != null)
                 return StatusCode(403, new { message = "Manager can only upload to projects." });
-            if (task.Team?.ManagerId != userId)
-                return StatusCode(403, new { message = "You can only upload to projects in teams you manage." });
+            if (task.AssignerId != userId)
+                return StatusCode(403, new { message = "You can only upload to projects you created." });
         }
         // Admin can upload to anything
 

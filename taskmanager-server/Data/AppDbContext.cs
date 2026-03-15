@@ -10,8 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
-    public DbSet<Team> Teams => Set<Team>();
-    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -24,6 +23,10 @@ public class AppDbContext : DbContext
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
     public DbSet<TrainingRequest> TrainingRequests => Set<TrainingRequest>();
     public DbSet<SkillUsage> SkillUsages => Set<SkillUsage>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+    public DbSet<Team> Teams => Set<Team>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,28 +48,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(ur => ur.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ─── TeamMember (many-to-many) ─────────────
-        modelBuilder.Entity<TeamMember>()
-            .HasKey(tm => new { tm.TeamId, tm.UserId });
-
-        modelBuilder.Entity<TeamMember>()
-            .HasOne(tm => tm.Team)
-            .WithMany(t => t.Members)
-            .HasForeignKey(tm => tm.TeamId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<TeamMember>()
-            .HasOne(tm => tm.User)
-            .WithMany(u => u.TeamMemberships)
-            .HasForeignKey(tm => tm.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // ─── Team → Manager ────────────────────────
-        modelBuilder.Entity<Team>()
-            .HasOne(t => t.Manager)
-            .WithMany(u => u.ManagedTeams)
-            .HasForeignKey(t => t.ManagerId)
-            .OnDelete(DeleteBehavior.SetNull);
 
         // ─── TaskItem ──────────────────────────────
         modelBuilder.Entity<TaskItem>().ToTable("Tasks");
@@ -83,11 +64,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(t => t.AssignerId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        modelBuilder.Entity<TaskItem>()
-            .HasOne(t => t.Team)
-            .WithMany(tm => tm.Tasks)
-            .HasForeignKey(t => t.TeamId)
-            .OnDelete(DeleteBehavior.NoAction);
 
         // ── TaskItem self-referencing hierarchy ──
         modelBuilder.Entity<TaskItem>()
@@ -257,5 +233,77 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<EmployeeReview>()
             .HasIndex(r => new { r.EmployeeId, r.ReviewPeriod })
             .IsUnique(); // one review per employee per period
+
+        // ─── Project ──────────────────────────────────
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.CreatedByManager)
+            .WithMany()
+            .HasForeignKey(p => p.CreatedByManagerId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.Lead)
+            .WithMany()
+            .HasForeignKey(p => p.LeadId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Project>()
+            .HasIndex(p => p.CreatedByManagerId);
+
+        // ─── Project → Team ──────────────────────────
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.Team)
+            .WithMany(t => t.Projects)
+            .HasForeignKey(p => p.TeamId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── ProjectMember (many-to-many) ─────────────
+        modelBuilder.Entity<ProjectMember>()
+            .HasKey(pm => new { pm.ProjectId, pm.UserId });
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.Project)
+            .WithMany(p => p.Members)
+            .HasForeignKey(pm => pm.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.User)
+            .WithMany()
+            .HasForeignKey(pm => pm.UserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ─── TaskItem → Project ───────────────────────
+        modelBuilder.Entity<TaskItem>()
+            .HasOne(t => t.Project)
+            .WithMany(p => p.Tasks)
+            .HasForeignKey(t => t.ProjectId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => t.ProjectId);
+
+        // ─── Team → Manager ──────────────────────────
+        modelBuilder.Entity<Team>()
+            .HasOne(t => t.Manager)
+            .WithMany(u => u.ManagedTeams)
+            .HasForeignKey(t => t.ManagerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── TeamMember (many-to-many) ───────────────
+        modelBuilder.Entity<TeamMember>()
+            .HasKey(tm => new { tm.TeamId, tm.UserId });
+
+        modelBuilder.Entity<TeamMember>()
+            .HasOne(tm => tm.Team)
+            .WithMany(t => t.Members)
+            .HasForeignKey(tm => tm.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TeamMember>()
+            .HasOne(tm => tm.User)
+            .WithMany(u => u.TeamMemberships)
+            .HasForeignKey(tm => tm.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -95,8 +95,7 @@ public class SettingsController : ControllerBase
             settings.PushNotifications = request.PushNotifications.Value;
         if (request.TaskUpdateNotifications.HasValue)
             settings.TaskUpdateNotifications = request.TaskUpdateNotifications.Value;
-        if (request.TeamMessageNotifications.HasValue)
-            settings.TeamMessageNotifications = request.TeamMessageNotifications.Value;
+
 
         // Update appearance settings
         if (!string.IsNullOrWhiteSpace(request.Theme))
@@ -201,8 +200,7 @@ public class SettingsController : ControllerBase
             settings.PushNotifications = request.PushNotifications.Value;
         if (request.TaskUpdateNotifications.HasValue)
             settings.TaskUpdateNotifications = request.TaskUpdateNotifications.Value;
-        if (request.TeamMessageNotifications.HasValue)
-            settings.TeamMessageNotifications = request.TeamMessageNotifications.Value;
+
 
         settings.UpdatedDate = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -276,7 +274,7 @@ public class SettingsController : ControllerBase
         EmailNotifications = s.EmailNotifications,
         PushNotifications = s.PushNotifications,
         TaskUpdateNotifications = s.TaskUpdateNotifications,
-        TeamMessageNotifications = s.TeamMessageNotifications,
+
         Theme = s.Theme,
         CompactMode = s.CompactMode,
         ShowOnlineStatus = s.ShowOnlineStatus,

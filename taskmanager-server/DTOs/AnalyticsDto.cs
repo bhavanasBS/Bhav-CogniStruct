@@ -41,6 +41,14 @@ public class TeamComparisonDto
     public double Efficiency { get; set; }
 }
 
+public class HierarchyNode
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public List<HierarchyNode> Children { get; set; } = new();
+}
+
 public class WeeklyProductivityDto
 {
     public string Name { get; set; } = string.Empty;
@@ -89,12 +97,7 @@ public class WorkloadMemberDto
     public int PausedTasks { get; set; }
 }
 
-public class TeamWorkloadDto
-{
-    public string Name { get; set; } = string.Empty;
-    public int Workload { get; set; }
-    public int Members { get; set; }
-}
+
 
 public class WorkloadRecommendationDto
 {
@@ -147,35 +150,18 @@ public class ManagerDto
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string Department { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
-    public int TeamSize { get; set; }
-    public List<string> Teams { get; set; } = new();
     public string? Location { get; set; }
     public string? ReportsTo { get; set; }
 }
 
 public class ManagerDashboardDto
 {
-    public List<TeamReportDto> TeamReports { get; set; } = new();
-    public int TotalTeams { get; set; }
     public int ActiveTasks { get; set; }
     public double TotalHours { get; set; }
     public double AvgEfficiency { get; set; }
 }
 
-public class TeamReportDto
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Lead { get; set; } = string.Empty;
-    public int Members { get; set; }
-    public int ActiveTasks { get; set; }
-    public int CompletedTasks { get; set; }
-    public double TotalHours { get; set; }
-    public double Efficiency { get; set; }
-    public string Status { get; set; } = "on-track";
-}
 
 // ─── Paginated Response ────────────────────────────
 

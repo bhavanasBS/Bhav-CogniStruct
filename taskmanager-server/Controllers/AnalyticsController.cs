@@ -110,19 +110,19 @@ public class AnalyticsController : ControllerBase
     [HttpGet("team-comparison")]
     public async Task<IActionResult> GetTeamComparison()
     {
-        var teams = await _db.Teams
-            .Include(t => t.Tasks)
-            .Include(t => t.Members)
-            .Where(t => t.IsActive)
+        // Compare projects (parent tasks) instead of teams
+        var projects = await _db.Tasks
+            .Include(t => t.SubTasks)
+            .Where(t => t.ParentTaskId == null)
             .ToListAsync();
 
-        var comparison = teams.Select(t =>
+        var comparison = projects.Select(p =>
         {
-            var total = t.Tasks.Count;
-            var completed = t.Tasks.Count(tk => tk.Status == 3);
+            var total = p.SubTasks.Count;
+            var completed = p.SubTasks.Count(st => st.Status == 3);
             return new TeamComparisonDto
             {
-                Name = t.TeamName,
+                Name = p.Title,
                 Tasks = total,
                 Efficiency = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0
             };
@@ -417,23 +417,18 @@ public class AnalyticsController : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetTeamPerformance(int teamId)
     {
-        var members = await _db.Set<TaskManager.API.Models.TeamMember>()
-            .Where(m => m.TeamId == teamId)
-            .Include(m => m.User).ThenInclude(u => u.AssignedTasks)
-            .Include(m => m.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .ToListAsync();
-
-        // Filter to only Employees (exclude Manager, TeamLead, Admin)
-        members = members
-            .Where(m => m.User.UserRoles.Any(ur =>
+        // Get all active employees
+        var employees = await _db.Users
+            .Include(u => u.AssignedTasks)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Where(u => u.IsActive && u.UserRoles.Any(ur =>
                 ur.Role.RoleName.Equals("Employee", StringComparison.OrdinalIgnoreCase)))
-            .ToList();
+            .ToListAsync();
 
         var result = new List<object>();
 
-        foreach (var m in members)
+        foreach (var user in employees)
         {
-            var user = m.User;
             var tasks = user.AssignedTasks.Where(t => t.Status != 6).ToList(); // exclude cancelled
             var completed = tasks.Where(t => t.Status == 3).ToList();
 

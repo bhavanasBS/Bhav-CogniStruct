@@ -28,20 +28,22 @@ import { useAuthContext } from '../../context/AuthContext';
 const getNavigationByRole = (userRole) => {
   const allNavigation = {
 
-    // Admin only — /dashboard, /users, /roles, /teams
+    // Admin only — /dashboard, /users, /roles
     admin: [
       { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: 'from-purple-500 to-purple-600' },
       { name: 'Users', href: '/users', icon: Users, color: 'from-violet-500 to-violet-600' },
+      { name: 'Teams', href: '/teams', icon: UsersRound, color: 'from-indigo-500 to-indigo-600' },
       { name: 'Roles', href: '/roles', icon: Shield, color: 'from-pink-500 to-pink-600' },
-      { name: 'Teams', href: '/teams', icon: UsersRound, color: 'from-emerald-500 to-emerald-600' },
+
     ],
 
     // Manager — all /manager/ prefixed
     manager: [
       { name: 'My Dashboard', href: '/manager/dashboard', icon: LayoutDashboard, color: 'from-cyan-500 to-cyan-600' },
-      { name: 'My Team', href: '/manager/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
+
       { name: 'Tasks', href: '/manager/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
       { name: 'Projects', href: '/manager/projects', icon: FolderKanban, color: 'from-violet-500 to-indigo-600' },
+      { name: 'Teams', href: '/manager/teams', icon: UsersRound, color: 'from-indigo-500 to-indigo-600' },
       { name: 'Approvals', href: '/manager/approvals', icon: CheckSquare, color: 'from-amber-500 to-amber-600' },
       { name: 'Time Logs', href: '/manager/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Analytics', href: '/manager/analytics', icon: BarChart3, color: 'from-indigo-500 to-indigo-600' },
@@ -52,7 +54,7 @@ const getNavigationByRole = (userRole) => {
     teamLead: [
       { name: 'Team Dashboard', href: '/teamlead/dashboard', icon: LayoutDashboard, color: 'from-amber-500 to-orange-600' },
       { name: 'My Projects', href: '/teamlead/projects', icon: FolderKanban, color: 'from-purple-500 to-indigo-600' },
-      { name: 'My Team', href: '/teamlead/team', icon: UsersRound, color: 'from-teal-500 to-teal-600' },
+
       { name: 'Tasks', href: '/teamlead/tasks', icon: ClipboardList, color: 'from-blue-500 to-blue-600' },
       { name: 'Time Logs', href: '/teamlead/time-logs', icon: Clock, color: 'from-amber-500 to-amber-600' },
       { name: 'Workload', href: '/teamlead/workload', icon: Scale, color: 'from-rose-500 to-rose-600' },

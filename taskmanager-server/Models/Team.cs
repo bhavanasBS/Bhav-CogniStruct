@@ -13,6 +13,7 @@ public class Team
     [MaxLength(1000)]
     public string? Description { get; set; }
 
+    /// <summary>FK → User who manages this team (Manager / Team Lead)</summary>
     public int? ManagerId { get; set; }
     public User? Manager { get; set; }
 
@@ -21,5 +22,5 @@ public class Team
 
     // Navigation
     public ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
-    public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+    public ICollection<Project> Projects { get; set; } = new List<Project>();
 }

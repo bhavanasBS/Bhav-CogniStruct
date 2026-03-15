@@ -12,7 +12,7 @@ public class UserSettingsDto
     public bool EmailNotifications { get; set; }
     public bool PushNotifications { get; set; }
     public bool TaskUpdateNotifications { get; set; }
-    public bool TeamMessageNotifications { get; set; }
+
 
     // Appearance
     public string Theme { get; set; } = "light";
@@ -32,7 +32,7 @@ public class UpdateSettingsRequest
     public bool? EmailNotifications { get; set; }
     public bool? PushNotifications { get; set; }
     public bool? TaskUpdateNotifications { get; set; }
-    public bool? TeamMessageNotifications { get; set; }
+
 
     // Appearance
     public string? Theme { get; set; }

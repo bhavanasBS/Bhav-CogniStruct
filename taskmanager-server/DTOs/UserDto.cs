@@ -81,7 +81,7 @@ public class UserProfileDto
     public string? ManagerName { get; set; }
 
     // Team memberships
-    public List<ProfileTeamDto> Teams { get; set; } = new();
+
 
     // Personal task statistics
     public int TotalTasks { get; set; }
@@ -95,11 +95,11 @@ public class UserProfileDto
 
     // Leadership stats (Manager, TeamLead, Admin)
     public int DirectReportsCount { get; set; }
-    public int ManagedTeamsCount { get; set; }
+
 
     // Role-specific: Admin — system-wide overview
     public int? AllUsersCount { get; set; }
-    public int? AllTeamsCount { get; set; }
+
     public int? AllTasksCount { get; set; }
     public int? ActiveUsersCount { get; set; }
 
@@ -110,12 +110,7 @@ public class UserProfileDto
     public int? TotalCompletedTasksOrg { get; set; }
 
     // Role-specific: Manager / TeamLead — team performance
-    public int? TeamMembersCount { get; set; }
-    public int? TeamTasksCount { get; set; }
-    public int? TeamCompletedTasks { get; set; }
-    public double? TeamCompletionRate { get; set; }
-    public int? TeamOverdueTasks { get; set; }
-    public double? TeamHoursLogged { get; set; }
+
 
     // Role-specific: Employee — personal productivity
     public double? AvgHoursPerDay { get; set; }
@@ -123,9 +118,3 @@ public class UserProfileDto
     public int? TasksDueThisWeek { get; set; }
 }
 
-public class ProfileTeamDto
-{
-    public int TeamId { get; set; }
-    public string TeamName { get; set; } = string.Empty;
-    public string? Role { get; set; } // e.g. "Manager", "Member"
-}

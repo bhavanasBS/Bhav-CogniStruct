@@ -6,7 +6,7 @@ import {
     Star, MessageSquare, Zap, Award, TrendingUp
 } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
-import { teamApi } from '../../api/teamApi';
+
 import { workloadApi } from '../../api/workloadApi';
 import { feedbackApi } from '../../api/feedbackApi';
 import api from '../../api/axiosInstance';
@@ -69,13 +69,11 @@ const ProjectDetailPage = () => {
                 setSubtasks([]);
             }
 
-            // Load team members
-            if (projRes.data.teamId) {
-                try {
-                    const membersRes = await teamApi.getMembers(projRes.data.teamId);
-                    setTeamMembers(membersRes.data || []);
-                } catch { /* ignore */ }
-            }
+            // Load project members (eligible assignees)
+            try {
+                const membersRes = await api.get(`/api/tasks/${id}/eligible-assignees`);
+                setTeamMembers(membersRes.data || []);
+            } catch { /* ignore */ }
         } catch (err) {
             console.error('Failed to load project:', err);
             toast.error('Failed to load project');
@@ -129,14 +127,14 @@ const ProjectDetailPage = () => {
             toast.error('Enter required skills first (e.g. React,SQL)');
             return;
         }
-        if (!project?.teamId) {
-            toast.error('No team associated with this project');
+        if (!project?.taskId) {
+            toast.error('No project found');
             return;
         }
         try {
             setLoadingSuggestions(true);
             const res = await workloadApi.getSkillRecommendation(
-                project.teamId,
+                project.taskId,
                 form.requiredSkills,
                 Number(form.estimatedHours) || 8
             );

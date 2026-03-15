@@ -34,16 +34,8 @@ public class ProfileController : ControllerBase
         profile.AllUsersCount = await _db.Users.CountAsync();
         profile.ActiveUsersCount = await _db.Users.CountAsync(u => u.IsActive);
         profile.InactiveUsersCount = await _db.Users.CountAsync(u => !u.IsActive);
-        profile.AllTeamsCount = await _db.Teams.CountAsync(t => t.IsActive);
         profile.AllTasksCount = await _db.Tasks.CountAsync();
         profile.TotalCompletedTasksOrg = await _db.Tasks.CountAsync(t => t.Status == 3);
-
-        // Admin team performance (if managing teams)
-        var managedTeamIds = await _db.Teams
-            .Where(t => t.ManagerId == user.UserId && t.IsActive)
-            .Select(t => t.TeamId).ToListAsync();
-        if (managedTeamIds.Count > 0)
-            await PopulateTeamPerformance(profile, managedTeamIds);
 
         return Ok(profile);
     }
@@ -60,16 +52,6 @@ public class ProfileController : ControllerBase
 
         var profile = await BuildBaseProfile(user, roles);
 
-        // Manager-specific: Team performance
-        var managedTeamIds = await _db.Teams
-            .Where(t => t.ManagerId == user.UserId && t.IsActive)
-            .Select(t => t.TeamId).ToListAsync();
-
-        if (managedTeamIds.Count > 0)
-            await PopulateTeamPerformance(profile, managedTeamIds);
-        else
-            SetEmptyTeamPerformance(profile);
-
         return Ok(profile);
     }
 
@@ -84,22 +66,6 @@ public class ProfileController : ControllerBase
         if (user == null) return Unauthorized(new { message = "Could not identify user." });
 
         var profile = await BuildBaseProfile(user, roles);
-
-        // TeamLead-specific: Team stats (managed + member teams)
-        var managedTeamIds = await _db.Teams
-            .Where(t => t.ManagerId == user.UserId && t.IsActive)
-            .Select(t => t.TeamId).ToListAsync();
-
-        var memberTeamIds = await _db.TeamMembers
-            .Where(tm => tm.UserId == user.UserId)
-            .Select(tm => tm.TeamId).ToListAsync();
-
-        var allTeamIds = managedTeamIds.Union(memberTeamIds).Distinct().ToList();
-
-        if (allTeamIds.Count > 0)
-            await PopulateTeamPerformance(profile, allTeamIds);
-        else
-            SetEmptyTeamPerformance(profile);
 
         return Ok(profile);
     }
@@ -199,18 +165,6 @@ public class ProfileController : ControllerBase
 
         var roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList();
 
-        var memberships = await _db.TeamMembers
-            .Include(tm => tm.Team)
-            .Where(tm => tm.UserId == id)
-            .ToListAsync();
-
-        var teamMemberships = memberships.Select(tm => new ProfileTeamDto
-        {
-            TeamId = tm.TeamId,
-            TeamName = tm.Team?.TeamName ?? "Unknown",
-            Role = tm.Team?.ManagerId == id ? "Manager" : "Member"
-        }).ToList();
-
         // Return public-safe fields
         return Ok(new
         {
@@ -236,8 +190,7 @@ public class ProfileController : ControllerBase
             workerType = user.WorkerType,
             timeType = user.TimeType,
             managerId = user.ManagerId,
-            managerName = user.Manager != null ? $"{user.Manager.FirstName} {user.Manager.LastName}" : null,
-            teams = teamMemberships
+            managerName = user.Manager != null ? $"{user.Manager.FirstName} {user.Manager.LastName}" : null
         });
     }
 
@@ -279,39 +232,6 @@ public class ProfileController : ControllerBase
 
         // Leadership stats
         var directReports = await _db.Users.CountAsync(u => u.ManagerId == user.UserId && u.IsActive);
-        var managedTeamsCount = await _db.Teams.CountAsync(t => t.ManagerId == user.UserId && t.IsActive);
-
-        // Team memberships
-        var memberships = await _db.TeamMembers
-            .Include(tm => tm.Team)
-            .Where(tm => tm.UserId == user.UserId)
-            .ToListAsync();
-
-        var teams = memberships
-            .Select(tm => new ProfileTeamDto
-            {
-                TeamId = tm.TeamId,
-                TeamName = tm.Team?.TeamName ?? "Unknown",
-                Role = tm.Team?.ManagerId == user.UserId ? "Manager" : "Member"
-            }).ToList();
-
-        // Add managed teams not in memberships
-        var managedTeams = await _db.Teams
-            .Where(t => t.ManagerId == user.UserId && t.IsActive)
-            .ToListAsync();
-
-        foreach (var mt in managedTeams)
-        {
-            if (!teams.Any(t => t.TeamId == mt.TeamId))
-            {
-                teams.Add(new ProfileTeamDto
-                {
-                    TeamId = mt.TeamId,
-                    TeamName = mt.TeamName,
-                    Role = "Manager"
-                });
-            }
-        }
 
         return new UserProfileDto
         {
@@ -342,56 +262,13 @@ public class ProfileController : ControllerBase
             Roles = roles,
             ManagerId = user.ManagerId,
             ManagerName = user.Manager != null ? $"{user.Manager.FirstName} {user.Manager.LastName}" : null,
-            Teams = teams,
             TotalTasks = totalTasks,
             CompletedTasks = completedTasks,
             InProgressTasks = inProgressTasks,
             PendingTasks = pendingTasks,
             OverdueTasks = overdueTasks,
             TotalHoursLogged = totalHours,
-            DirectReportsCount = directReports,
-            ManagedTeamsCount = managedTeamsCount
+            DirectReportsCount = directReports
         };
-    }
-
-    private async Task PopulateTeamPerformance(UserProfileDto profile, List<int> teamIds)
-    {
-        var memberCount = await _db.TeamMembers
-            .Where(tm => teamIds.Contains(tm.TeamId))
-            .Select(tm => tm.UserId).Distinct().CountAsync();
-
-        var teamTasks = await _db.Tasks
-            .Where(t => t.TeamId.HasValue && teamIds.Contains(t.TeamId.Value))
-            .ToListAsync();
-
-        var teamCompleted = teamTasks.Count(t => t.Status == 3);
-        var teamOverdue = teamTasks.Count(t =>
-            t.Deadline.HasValue && t.Deadline.Value < DateTime.UtcNow && t.Status != 3);
-
-        var memberIds = await _db.TeamMembers
-            .Where(tm => teamIds.Contains(tm.TeamId))
-            .Select(tm => tm.UserId).Distinct().ToListAsync();
-
-        var teamHours = await _db.WorkLogs
-            .Where(w => memberIds.Contains(w.UserId))
-            .SumAsync(w => (double?)w.TotalHours) ?? 0;
-
-        profile.TeamMembersCount = memberCount;
-        profile.TeamTasksCount = teamTasks.Count;
-        profile.TeamCompletedTasks = teamCompleted;
-        profile.TeamCompletionRate = teamTasks.Count > 0
-            ? Math.Round((double)teamCompleted / teamTasks.Count * 100, 1) : 0;
-        profile.TeamOverdueTasks = teamOverdue;
-        profile.TeamHoursLogged = Math.Round(teamHours, 1);
-    }
-
-    private void SetEmptyTeamPerformance(UserProfileDto profile)
-    {
-        profile.TeamMembersCount = 0;
-        profile.TeamTasksCount = 0;
-        profile.TeamCompletedTasks = 0;
-        profile.TeamCompletionRate = 0;
-        profile.TeamOverdueTasks = 0;
-        profile.TeamHoursLogged = 0;
     }
 }

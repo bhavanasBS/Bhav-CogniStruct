@@ -6,7 +6,7 @@ import Pagination from '../../components/common/Pagination';
 import UserList from '../../components/users/UserList';
 import UserForm from '../../components/users/UserForm';
 import { userApi } from '../../api/userApi';
-import { teamApi } from '../../api/teamApi';
+
 import toast from 'react-hot-toast';
 
 const UserManagement = () => {
@@ -90,7 +90,7 @@ const UserManagement = () => {
     try {
       setLoadingManagers(true);
       // Fetch users with Manager role
-      const res = await teamApi.managerSearch('');
+      const res = await userApi.getAll({ role: 'Manager' });
       setManagers(res.data || []);
     } catch (error) {
       console.error('Failed to fetch managers:', error);

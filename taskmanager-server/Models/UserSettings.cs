@@ -19,7 +19,7 @@ public class UserSettings
     public bool EmailNotifications { get; set; } = true;
     public bool PushNotifications { get; set; } = true;
     public bool TaskUpdateNotifications { get; set; } = true;
-    public bool TeamMessageNotifications { get; set; } = false;
+
 
     // Appearance
     [MaxLength(20)]

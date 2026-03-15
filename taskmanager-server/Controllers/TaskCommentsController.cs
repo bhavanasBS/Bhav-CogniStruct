@@ -34,20 +34,19 @@ public class TaskCommentsController : ControllerBase
 
         var task = await _db.Tasks
             .Include(t => t.ParentTask)
-            .Include(t => t.Team)
             .FirstOrDefaultAsync(t => t.TaskId == taskId);
 
         if (task == null) return NotFound(new { message = "Task not found." });
 
         var userId = GetCurrentUserId();
 
-        // RBAC: task assignee, project TeamLead, team Manager, or Admin
+        // RBAC: task assignee, project TeamLead, project creator, or Admin
         var isAssignee = task.AssigneeId == userId;
         var isProjectLead = task.ParentTask?.AssigneeId == userId;
-        var isTeamManager = task.Team?.ManagerId == userId;
+        var isProjectCreator = task.ParentTask?.AssignerId == userId;
         var isAdmin = User.IsInRole("Admin");
 
-        if (!isAssignee && !isProjectLead && !isTeamManager && !isAdmin)
+        if (!isAssignee && !isProjectLead && !isProjectCreator && !isAdmin)
             return StatusCode(403, new { message = "You do not have permission to comment on this task." });
 
         var comment = new TaskComment

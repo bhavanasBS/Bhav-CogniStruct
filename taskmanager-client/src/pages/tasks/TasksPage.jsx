@@ -9,7 +9,6 @@ import TaskFilters from '../../components/tasks/TaskFilters';
 import Pagination from '../../components/common/Pagination';
 import { useNavigate } from 'react-router-dom';
 import { taskApi } from '../../api/taskApi';
-import { teamApi } from '../../api/teamApi';
 import toast from 'react-hot-toast';
 
 const TasksPage = () => {
@@ -23,9 +22,7 @@ const TasksPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const navigate = useNavigate();
 
-  // Real employees and teams for task form
-  const [employees, setEmployees] = useState([]);
-  const [teams, setTeams] = useState([]);
+
 
   // Get current user role
   const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
@@ -56,44 +53,13 @@ const TasksPage = () => {
     }
   };
 
-  const fetchTeams = async () => {
-    try {
-      const teamRes = await teamApi.getAll();
-      setTeams((teamRes.data.items || teamRes.data || []).map(t => ({
-        teamId: t.id || t.teamId,
-        teamName: t.teamName,
-      })));
-    } catch { /* no teams */ }
-  };
 
-  // Load employees dynamically when team changes
-  const handleTeamChange = async (teamId) => {
-    setEmployees([]);
-    if (!teamId) return;
-    try {
-      const membersRes = await teamApi.getMembers(teamId);
-      // Filter out Manager and Admin — only TeamLead and Employee can be assigned
-      const filtered = (membersRes.data || []).filter(m => {
-        const role = (m.role || '').toLowerCase();
-        return role !== 'manager' && role !== 'admin';
-      });
-      setEmployees(filtered.map(m => ({
-        userId: m.userId,
-        firstName: m.name?.split(' ')[0] || '',
-        lastName: m.name?.split(' ').slice(1).join(' ') || '',
-      })));
-    } catch {
-      setEmployees([]);
-    }
-  };
 
   useEffect(() => {
     fetchTasks();
   }, [page, search, filters]);
 
-  useEffect(() => {
-    if (canCreate) fetchTeams();
-  }, []);
+
 
   const handleCreateTask = async (data) => {
     try {
@@ -101,7 +67,6 @@ const TasksPage = () => {
         title: data.title,
         description: data.description,
         assigneeId: Number(data.assignedTo) || null,
-        teamId: Number(data.teamId) || null,
         priority: data.priority,
         deadline: data.deadline || null,
         estimatedHours: data.estimatedHours,
@@ -263,9 +228,6 @@ const TasksPage = () => {
           isOpen={showForm}
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateTask}
-          employees={employees}
-          teams={teams}
-          onTeamChange={handleTeamChange}
         />
       )}
     </div>

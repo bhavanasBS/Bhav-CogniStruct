@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskManager.API.Data;
 
@@ -11,9 +12,11 @@ using TaskManager.API.Data;
 namespace TaskManager.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313084242_AddProjectArchitecture")]
+    partial class AddProjectArchitecture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,16 +194,11 @@ namespace TaskManager.API.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TeamId")
-                        .HasColumnType("int");
-
                     b.HasKey("ProjectId");
 
                     b.HasIndex("CreatedByManagerId");
 
                     b.HasIndex("LeadId");
-
-                    b.HasIndex("TeamId");
 
                     b.ToTable("Projects");
                 });
@@ -528,57 +526,6 @@ namespace TaskManager.API.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("Tasks", (string)null);
-                });
-
-            modelBuilder.Entity("TaskManager.API.Models.Team", b =>
-                {
-                    b.Property<int>("TeamId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TeamId"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ManagerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TeamName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("TeamId");
-
-                    b.HasIndex("ManagerId");
-
-                    b.ToTable("Teams");
-                });
-
-            modelBuilder.Entity("TaskManager.API.Models.TeamMember", b =>
-                {
-                    b.Property<int>("TeamId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("JoinedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("TeamId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("TeamMembers");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.TrainingRequest", b =>
@@ -929,16 +876,9 @@ namespace TaskManager.API.Migrations
                         .HasForeignKey("LeadId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("TaskManager.API.Models.Team", "Team")
-                        .WithMany("Projects")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("CreatedByManager");
 
                     b.Navigation("Lead");
-
-                    b.Navigation("Team");
                 });
 
             modelBuilder.Entity("TaskManager.API.Models.ProjectMember", b =>
@@ -1094,35 +1034,6 @@ namespace TaskManager.API.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("TaskManager.API.Models.Team", b =>
-                {
-                    b.HasOne("TaskManager.API.Models.User", "Manager")
-                        .WithMany("ManagedTeams")
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Manager");
-                });
-
-            modelBuilder.Entity("TaskManager.API.Models.TeamMember", b =>
-                {
-                    b.HasOne("TaskManager.API.Models.Team", "Team")
-                        .WithMany("Members")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TaskManager.API.Models.User", "User")
-                        .WithMany("TeamMemberships")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Team");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("TaskManager.API.Models.TrainingRequest", b =>
                 {
                     b.HasOne("TaskManager.API.Models.User", "Employee")
@@ -1217,26 +1128,15 @@ namespace TaskManager.API.Migrations
                     b.Navigation("WorkLogs");
                 });
 
-            modelBuilder.Entity("TaskManager.API.Models.Team", b =>
-                {
-                    b.Navigation("Members");
-
-                    b.Navigation("Projects");
-                });
-
             modelBuilder.Entity("TaskManager.API.Models.User", b =>
                 {
                     b.Navigation("AssignedTasks");
 
                     b.Navigation("CreatedTasks");
 
-                    b.Navigation("ManagedTeams");
-
                     b.Navigation("Notifications");
 
                     b.Navigation("Subordinates");
-
-                    b.Navigation("TeamMemberships");
 
                     b.Navigation("UserRoles");
 

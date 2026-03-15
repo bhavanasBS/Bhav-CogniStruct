@@ -87,36 +87,32 @@ public class WorkLogsController : ControllerBase
     [HttpGet("team/{userId}")]
     public async Task<IActionResult> GetByTeam(int userId)
     {
-        // Find team IDs where this user is the Manager
-        var managedTeamIds = await _db.Teams
-            .Where(t => t.ManagerId == userId && t.IsActive)
-            .Select(t => t.TeamId)
+        // Get direct reports (employees managed by this user)
+        var directReportIds = await _db.Users
+            .Where(u => u.ManagerId == userId && u.IsActive)
+            .Select(u => u.UserId)
             .ToListAsync();
 
-        // Find team IDs where this user is a member (covers TeamLeads)
-        var memberTeamIds = await _db.TeamMembers
-            .Where(tm => tm.UserId == userId && tm.Team.IsActive)
-            .Select(tm => tm.TeamId)
-            .ToListAsync();
-
-        // Combine both sets of team IDs
-        var allTeamIds = managedTeamIds.Union(memberTeamIds).Distinct().ToList();
-
-        // Get all member IDs from those teams
-        var teamMemberIds = await _db.TeamMembers
-            .Where(tm => allTeamIds.Contains(tm.TeamId))
-            .Select(tm => tm.UserId)
+        // Also get subtask assignees from projects created by or assigned to this user
+        var projectSubtaskAssigneeIds = await _db.Tasks
+            .Where(t => t.ParentTaskId == null && (t.AssignerId == userId || t.AssigneeId == userId))
+            .SelectMany(t => t.SubTasks)
+            .Where(st => st.AssigneeId.HasValue)
+            .Select(st => st.AssigneeId!.Value)
             .Distinct()
             .ToListAsync();
 
+        // Combine all member IDs
+        var allMemberIds = directReportIds.Union(projectSubtaskAssigneeIds).Distinct().ToList();
+
         // Include the user's own logs too
-        if (!teamMemberIds.Contains(userId))
-            teamMemberIds.Add(userId);
+        if (!allMemberIds.Contains(userId))
+            allMemberIds.Add(userId);
 
         var logs = await _db.WorkLogs
             .Include(w => w.Task)
             .Include(w => w.User)
-            .Where(w => teamMemberIds.Contains(w.UserId))
+            .Where(w => allMemberIds.Contains(w.UserId))
             .OrderByDescending(w => w.StartTime)
             .Take(100)
             .ToListAsync();
