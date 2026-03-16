@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     LayoutDashboard, CheckSquare, Clock, Target,
-    Flame, Trophy, TrendingUp, ArrowUpRight, Loader2, Star
+    Trophy, TrendingUp, ArrowUpRight, Loader2, Star
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -23,7 +23,7 @@ const EmployeeDashboard = () => {
         completedToday: 0,
         inProgress: 0,
         hoursToday: 0,
-        streak: 7, // Mock streak for now
+
     });
     const [myTasks, setMyTasks] = useState([]);
 
@@ -127,14 +127,6 @@ const EmployeeDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Streak Badge */}
-                    <div className="flex items-center gap-3 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl">
-                        <Flame className="w-6 h-6 text-orange-300" />
-                        <div>
-                            <p className="text-2xl font-bold">{stats.streak}</p>
-                            <p className="text-white/70 text-xs">Day Streak</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 

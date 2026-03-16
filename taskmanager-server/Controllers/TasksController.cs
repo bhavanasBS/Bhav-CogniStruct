@@ -591,8 +591,8 @@ public class TasksController : ControllerBase
         return Ok(new { message = "Task cancelled." });
     }
 
-    // Only Admin and Manager can delete tasks
-    [Authorize(Roles = "Admin,Manager")]
+    // Admin, Manager, and TeamLead can delete tasks
+    [Authorize(Roles = "Admin,Manager,TeamLead,Team Lead")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -601,14 +601,48 @@ public class TasksController : ControllerBase
             .FirstOrDefaultAsync(t => t.TaskId == id);
         if (task == null) return NotFound();
 
-        // Block deleting parent if subtasks exist
-        if (task.ParentTaskId == null && task.SubTasks.Any())
-            return BadRequest(new { message = $"Cannot delete project with {task.SubTasks.Count} subtask(s). Delete subtasks first." });
+        var currentUserId = GetCurrentUserId();
+
+        // Role-based access
+        if (User.IsInRole("TeamLead") || User.IsInRole("Team Lead"))
+        {
+            // TeamLead can only delete subtasks (not parent/root tasks)
+            if (task.ParentTaskId == null)
+                return StatusCode(403, new { message = "TeamLead can only delete subtasks, not project-level tasks." });
+
+            // TeamLead must be the assigner of the subtask
+            if (task.AssignerId != currentUserId)
+                return StatusCode(403, new { message = "You can only delete subtasks you created." });
+        }
+
+        // Collect all task IDs to delete (task + its subtasks recursively)
+        var taskIdsToDelete = new List<int> { task.TaskId };
+        taskIdsToDelete.AddRange(task.SubTasks.Select(s => s.TaskId));
+
+        // Cascade-delete related records
+        var auditLogs = await _db.TaskAuditLogs.Where(a => taskIdsToDelete.Contains(a.TaskId)).ToListAsync();
+        _db.TaskAuditLogs.RemoveRange(auditLogs);
+
+        var notifications = await _db.Notifications.Where(n => n.RelatedEntityId.HasValue && taskIdsToDelete.Contains(n.RelatedEntityId.Value)).ToListAsync();
+        _db.Notifications.RemoveRange(notifications);
+
+        var workLogs = await _db.WorkLogs.Where(w => taskIdsToDelete.Contains(w.TaskId)).ToListAsync();
+        _db.WorkLogs.RemoveRange(workLogs);
+
+        var pauseRequests = await _db.PauseRequests.Where(p => taskIdsToDelete.Contains(p.TaskId)).ToListAsync();
+        _db.PauseRequests.RemoveRange(pauseRequests);
+
+        var feedbacks = await _db.TaskFeedbacks.Where(f => taskIdsToDelete.Contains(f.TaskId)).ToListAsync();
+        _db.TaskFeedbacks.RemoveRange(feedbacks);
+
+        // Delete subtasks first, then the parent
+        if (task.SubTasks.Any())
+            _db.Tasks.RemoveRange(task.SubTasks);
 
         _db.Tasks.Remove(task);
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Task deleted." });
+        return Ok(new { message = "Task deleted successfully." });
     }
 
     // ═══════════════════════════════════════════════════

@@ -8,8 +8,6 @@ import {
   AlertTriangle,
   Target,
   Activity,
-  ArrowUpRight,
-  ArrowDownRight,
   Zap,
   Trophy,
   Award,
@@ -20,18 +18,15 @@ import StatusPieChart from '../../components/analytics/StatusPieChart';
 import WeeklyLineChart from '../../components/analytics/WeeklyLineChart';
 import api from '../../api/axiosInstance';
 
-/* ─── KPI data ────────────────────────────────────── */
-const kpis = [
-  { label: 'Total Tasks', value: '156', change: 12, icon: Target, gradient: 'from-purple-500 to-purple-600', up: true },
-  { label: 'Completed', value: '98', change: 18, icon: CheckCircle, gradient: 'from-emerald-500 to-emerald-600', up: true },
-  { label: 'Hours Logged', value: '1,248', change: 8, icon: Clock, gradient: 'from-blue-500 to-blue-600', up: true },
-  { label: 'Active Members', value: '24', change: 2, icon: Users, gradient: 'from-amber-500 to-amber-600', up: true },
-  { label: 'Overdue', value: '7', change: 3, icon: AlertTriangle, gradient: 'from-rose-500 to-rose-600', up: false },
-  { label: 'Efficiency', value: '89%', change: 5, icon: Zap, gradient: 'from-indigo-500 to-indigo-600', up: true },
+/* ─── KPI Icons + styling (values loaded dynamically) ────── */
+const kpiMeta = [
+  { key: 'totalTasks', label: 'Total Tasks', icon: Target, gradient: 'from-purple-500 to-purple-600' },
+  { key: 'completed', label: 'Completed', icon: CheckCircle, gradient: 'from-emerald-500 to-emerald-600' },
+  { key: 'hoursLogged', label: 'Hours Logged', icon: Clock, gradient: 'from-blue-500 to-blue-600' },
+  { key: 'activeMembers', label: 'Active Members', icon: Users, gradient: 'from-amber-500 to-amber-600' },
+  { key: 'overdue', label: 'Overdue', icon: AlertTriangle, gradient: 'from-rose-500 to-rose-600' },
+  { key: 'efficiency', label: 'Efficiency', icon: Zap, gradient: 'from-indigo-500 to-indigo-600', suffix: '%' },
 ];
-
-/* ─── Top Performers ──────────────────────────────── */
-// Loaded from API below
 
 const AnalyticsDashboard = () => {
   const [period, setPeriod] = useState('week');
@@ -39,8 +34,35 @@ const AnalyticsDashboard = () => {
   const [prodLoading, setProdLoading] = useState(true);
   const [topPerformers, setTopPerformers] = useState([]);
   const [topLoading, setTopLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [taskActivity, setTaskActivity] = useState(null);
+  const [statusDist, setStatusDist] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   useEffect(() => {
+    // Dashboard summary (KPIs + weekly trends)
+    (async () => {
+      try {
+        const res = await api.get('/api/analytics/dashboard-summary');
+        setSummary(res.data);
+      } catch { setSummary(null); }
+      finally { setSummaryLoading(false); }
+    })();
+    // Task activity (daily bar chart)
+    (async () => {
+      try {
+        const res = await api.get('/api/analytics/completion-rate');
+        setTaskActivity(res.data?.daily || null);
+      } catch { setTaskActivity(null); }
+    })();
+    // Status distribution (pie chart)
+    (async () => {
+      try {
+        const res = await api.get('/api/analytics/task-distribution');
+        setStatusDist(res.data || null);
+      } catch { setStatusDist(null); }
+    })();
+    // Employee productivity
     (async () => {
       try {
         const res = await api.get('/api/analytics/employee-productivity');
@@ -48,6 +70,7 @@ const AnalyticsDashboard = () => {
       } catch { setProductivity([]); }
       finally { setProdLoading(false); }
     })();
+    // Top performers
     (async () => {
       try {
         const res = await api.get('/api/analytics/top-performers');
@@ -97,21 +120,32 @@ const AnalyticsDashboard = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-start justify-between mb-3">
-              <div className={`w-10 h-10 bg-gradient-to-br ${kpi.gradient} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                <kpi.icon className="h-5 w-5 text-white" />
-              </div>
-              <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${kpi.up ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {kpi.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {kpi.change}%
-              </span>
+        {summaryLoading ? (
+          kpiMeta.map((kpi) => (
+            <div key={kpi.key} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm animate-pulse">
+              <div className="w-10 h-10 bg-slate-200 rounded-xl mb-3" />
+              <div className="h-6 bg-slate-200 rounded w-16 mb-1" />
+              <div className="h-3 bg-slate-100 rounded w-20" />
             </div>
-            <p className="text-2xl font-bold text-slate-800">{kpi.value}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{kpi.label}</p>
-          </div>
-        ))}
+          ))
+        ) : (
+          kpiMeta.map((kpi) => {
+            const val = summary?.[kpi.key] ?? 0;
+            const displayVal = kpi.suffix ? `${val}${kpi.suffix}` : (typeof val === 'number' && val >= 1000 ? val.toLocaleString() : val);
+            const isNegative = kpi.key === 'overdue';
+            return (
+              <div key={kpi.key} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-10 h-10 bg-gradient-to-br ${kpi.gradient} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                    <kpi.icon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-slate-800">{displayVal}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{kpi.label}</p>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Charts Row: Task Activity + Status + Weekly Trends */}
@@ -125,7 +159,7 @@ const AnalyticsDashboard = () => {
               <CardTitle>Task Activity</CardTitle>
             </div>
           </CardHeader>
-          <TaskBarChart />
+          <TaskBarChart data={taskActivity} />
         </Card>
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -136,7 +170,7 @@ const AnalyticsDashboard = () => {
               <CardTitle>Status Distribution</CardTitle>
             </div>
           </CardHeader>
-          <StatusPieChart />
+          <StatusPieChart data={statusDist} />
         </Card>
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -147,7 +181,7 @@ const AnalyticsDashboard = () => {
               <CardTitle>Weekly Trends</CardTitle>
             </div>
           </CardHeader>
-          <WeeklyLineChart />
+          <WeeklyLineChart data={summary?.weeklyTrends} />
         </Card>
       </div>
 

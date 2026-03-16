@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, LayoutGrid, List, ClipboardList, CheckCircle, Clock, AlertTriangle, Target } from 'lucide-react';
+import { Plus, LayoutGrid, List, ClipboardList, CheckCircle, Clock, AlertTriangle, Target, Trash2 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import SearchBar from '../../components/common/SearchBar';
 import TaskList from '../../components/tasks/TaskList';
@@ -9,6 +9,7 @@ import TaskFilters from '../../components/tasks/TaskFilters';
 import Pagination from '../../components/common/Pagination';
 import { useNavigate } from 'react-router-dom';
 import { taskApi } from '../../api/taskApi';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const TasksPage = () => {
@@ -28,6 +29,9 @@ const TasksPage = () => {
   const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
   const userRole = (user.role || user.roles?.[0] || '').toLowerCase();
   const canCreate = ['admin', 'manager'].includes(userRole);
+  const canDelete = ['admin', 'manager', 'teamlead', 'team lead'].includes(userRole);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -77,6 +81,21 @@ const TasksPage = () => {
     } catch (error) {
       console.error('Failed to create task:', error);
       toast.error(error.response?.data?.message || 'Failed to create task');
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      await taskApi.delete(deleteTarget.id || deleteTarget.taskId);
+      toast.success('Task deleted successfully');
+      setDeleteTarget(null);
+      fetchTasks();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete task');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -203,7 +222,12 @@ const TasksPage = () => {
       {/* Content */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {viewMode === 'list' ? (
-          <TaskList tasks={tasks} isLoading={isLoading} onSelect={(t) => navigate(`/tasks/${t.id || t.taskId}`)} />
+          <TaskList
+            tasks={tasks}
+            isLoading={isLoading}
+            onSelect={(t) => navigate(`/tasks/${t.id || t.taskId}`)}
+            onDelete={canDelete ? (t) => setDeleteTarget(t) : undefined}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-5">
             {isLoading ? (
@@ -230,6 +254,19 @@ const TasksPage = () => {
           onSubmit={handleCreateTask}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteTask}
+        title="Delete This Task?"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action is permanent and will remove all related data.`}
+        confirmLabel="Delete Task"
+        variant="danger"
+        icon={Trash2}
+        isLoading={deleteLoading}
+      />
     </div>
   );
 };

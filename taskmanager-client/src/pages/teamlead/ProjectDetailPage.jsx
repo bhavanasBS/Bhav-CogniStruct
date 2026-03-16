@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Plus, FolderKanban, CheckCircle, Clock, AlertTriangle,
     BarChart3, User, Users2, Flag, PauseCircle, ShieldAlert, Play, Pause, Ban, XCircle,
-    Star, MessageSquare, Zap, Award, TrendingUp
+    Star, MessageSquare, Zap, Award, TrendingUp, Trash2
 } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
 import { projectApi } from '../../api/projectApi';
@@ -206,7 +206,21 @@ const ProjectDetailPage = () => {
     };
 
     // Confirmation modal state for subtask pause/resume
-    const [confirmAction, setConfirmAction] = useState(null); // {type: 'pause'|'resume', taskId}
+    const [confirmAction, setConfirmAction] = useState(null); // {type: 'pause'|'resume'|'delete', taskId}
+
+    const handleDelete = async (taskId) => {
+        try {
+            setActionLoading(true);
+            await taskApi.delete(taskId);
+            toast.success('Task deleted successfully');
+            setConfirmAction(null);
+            fetchProject();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to delete task');
+        } finally {
+            setActionLoading(false);
+        }
+    };
     const [actionLoading, setActionLoading] = useState(false);
 
     const handlePause = async (taskId, e) => {
@@ -526,6 +540,13 @@ const ProjectDetailPage = () => {
                                                 <Award className="w-3.5 h-3.5" />
                                             </span>
                                         )}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'delete', taskId: task.id }); }}
+                                            className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                            title="Delete subtask"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${sc.color}`}>
                                             {sc.label}
                                         </span>
@@ -900,6 +921,17 @@ const ProjectDetailPage = () => {
                 confirmLabel="Resume Subtask"
                 variant="success"
                 icon={Play}
+                isLoading={actionLoading}
+            />
+            <ConfirmModal
+                isOpen={confirmAction?.type === 'delete'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={() => handleDelete(confirmAction?.taskId)}
+                title="Delete This Task?"
+                message="This action is permanent. The task and all its related data (work logs, feedback, notifications) will be removed."
+                confirmLabel="Delete Task"
+                variant="danger"
+                icon={Trash2}
                 isLoading={actionLoading}
             />
         </div>

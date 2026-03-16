@@ -2,9 +2,9 @@ import TaskStatusBadge from './TaskStatusBadge';
 import { TASK_PRIORITY_LABELS, TASK_PRIORITY_COLORS } from '../../utils/constants';
 import { formatDate, getRelativeTime, daysUntil } from '../../utils/dateUtils';
 import { getInitials, generateAvatarColor } from '../../utils/helpers';
-import { Flag, Clock, Calendar, ChevronRight, ClipboardList } from 'lucide-react';
+import { Flag, Clock, Calendar, ChevronRight, ClipboardList, Trash2 } from 'lucide-react';
 
-const TaskList = ({ tasks, onSelect, isLoading }) => {
+const TaskList = ({ tasks, onSelect, onDelete, isLoading }) => {
   if (isLoading) {
     return (
       <div className="p-10 text-center">
@@ -42,7 +42,7 @@ const TaskList = ({ tasks, onSelect, isLoading }) => {
             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Deadline</th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Est. Hours</th>
-            <th className="px-6 py-4 w-10"></th>
+            <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -111,7 +111,18 @@ const TaskList = ({ tasks, onSelect, isLoading }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                  <div className="flex items-center justify-end gap-2">
+                    {onDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(task); }}
+                        className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                  </div>
                 </td>
               </tr>
             );

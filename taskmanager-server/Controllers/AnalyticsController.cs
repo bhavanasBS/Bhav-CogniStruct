@@ -18,6 +18,56 @@ public class AnalyticsController : ControllerBase
         _db = db;
     }
 
+    // ═══════════════════════════════════════════════════
+    // GET /api/analytics/dashboard-summary
+    // Returns KPIs + weekly trends for the analytics dashboard
+    // ═══════════════════════════════════════════════════
+    [HttpGet("dashboard-summary")]
+    public async Task<IActionResult> GetDashboardSummary()
+    {
+        var allTasks = await _db.Tasks.Where(t => t.ParentTaskId != null).ToListAsync(); // subtasks only
+        var totalTasks = allTasks.Count;
+        var completedTasks = allTasks.Count(t => t.Status == 3);
+        var overdueTasks = allTasks.Count(t =>
+            t.Deadline.HasValue && DateTime.UtcNow > t.Deadline.Value && t.Status != 3 && t.Status != 6);
+        var efficiency = totalTasks > 0 ? Math.Round((double)completedTasks / totalTasks * 100, 0) : 0;
+
+        var totalHoursLogged = Math.Round(await _db.WorkLogs.SumAsync(w => w.TotalHours), 1);
+
+        var activeMembers = await _db.Users
+            .Where(u => u.IsActive && u.UserRoles.Any(ur =>
+                ur.Role.RoleName == "Employee" || ur.Role.RoleName == "TeamLead"))
+            .CountAsync();
+
+        // Weekly trends — last 6 weeks
+        var weeklyTrends = new List<object>();
+        for (int i = 5; i >= 0; i--)
+        {
+            var weekStart = DateTime.UtcNow.Date.AddDays(-((int)DateTime.UtcNow.DayOfWeek) - (i * 7));
+            var weekEnd = weekStart.AddDays(7);
+            var weekCompleted = allTasks.Count(t =>
+                t.Status == 3 && t.CompletedDate.HasValue &&
+                t.CompletedDate.Value >= weekStart && t.CompletedDate.Value < weekEnd);
+            var weekHours = Math.Round(
+                await _db.WorkLogs
+                    .Where(w => w.StartTime >= weekStart && w.StartTime < weekEnd)
+                    .SumAsync(w => w.TotalHours), 1);
+
+            weeklyTrends.Add(new { name = $"Week {6 - i}", tasks = weekCompleted, hours = weekHours });
+        }
+
+        return Ok(new
+        {
+            totalTasks,
+            completed = completedTasks,
+            hoursLogged = totalHoursLogged,
+            activeMembers,
+            overdue = overdueTasks,
+            efficiency,
+            weeklyTrends
+        });
+    }
+
     [HttpGet("completion-rate")]
     public async Task<IActionResult> GetCompletionRate()
     {
