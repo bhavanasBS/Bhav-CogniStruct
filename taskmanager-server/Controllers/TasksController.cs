@@ -30,15 +30,35 @@ public class TasksController : ControllerBase
     {
         var query = _db.Tasks.AsQueryable();
 
-        // If the user is an Employee, only show tasks assigned to them
-        var isPrivileged = User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("TeamLead");
-        if (!isPrivileged)
+        // Role-based filtering
+        var isAdmin = User.IsInRole("Admin");
+        var isManager = User.IsInRole("Manager");
+        var isTeamLead = User.IsInRole("TeamLead") || User.IsInRole("Team Lead");
+
+        if (!isAdmin && !isManager)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value
                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out var currentUserId))
             {
-                query = query.Where(t => t.AssigneeId == currentUserId);
+                if (isTeamLead)
+                {
+                    // TeamLead sees tasks from projects where they are a member + tasks assigned to them
+                    var memberProjectIds = await _db.ProjectMembers
+                        .Where(pm => pm.UserId == currentUserId)
+                        .Select(pm => pm.ProjectId)
+                        .ToListAsync();
+
+                    query = query.Where(t =>
+                        t.AssigneeId == currentUserId ||
+                        (t.ProjectId != null && memberProjectIds.Contains(t.ProjectId.Value))
+                    );
+                }
+                else
+                {
+                    // Employee sees only tasks assigned to them
+                    query = query.Where(t => t.AssigneeId == currentUserId);
+                }
             }
         }
 
@@ -144,6 +164,41 @@ public class TasksController : ControllerBase
         // ══════════════════════════════════════════════
         else if (isTeamLead)
         {
+            // If ProjectId is provided but ParentTaskId is not, auto-resolve the parent task
+            if (!request.ParentTaskId.HasValue && request.ProjectId.HasValue)
+            {
+                var projectRootTask = await _db.Tasks
+                    .Where(t => t.ProjectId == request.ProjectId.Value && t.ParentTaskId == null)
+                    .FirstOrDefaultAsync();
+
+                // Auto-create root TaskItem if project exists but has no linked task
+                if (projectRootTask == null)
+                {
+                    var proj = await _db.Projects.Include(p => p.Lead).FirstOrDefaultAsync(p => p.ProjectId == request.ProjectId.Value);
+                    if (proj != null)
+                    {
+                        projectRootTask = new TaskItem
+                        {
+                            Title = proj.Name,
+                            Description = proj.Description ?? string.Empty,
+                            AssigneeId = proj.LeadId,
+                            AssignerId = proj.CreatedByManagerId,
+                            Priority = 1,
+                            Status = 1, // Assigned
+                            ProjectId = proj.ProjectId,
+                            ParentTaskId = null,
+                            CreatedDate = DateTime.UtcNow,
+                            UpdatedDate = DateTime.UtcNow
+                        };
+                        _db.Tasks.Add(projectRootTask);
+                        await _db.SaveChangesAsync();
+                    }
+                }
+
+                if (projectRootTask != null)
+                    request.ParentTaskId = projectRootTask.TaskId;
+            }
+
             // TeamLead MUST specify a parent task
             if (!request.ParentTaskId.HasValue)
                 return BadRequest(new { message = "TeamLead can only create subtasks. ParentTaskId is required." });
@@ -247,6 +302,14 @@ public class TasksController : ControllerBase
         }
 
         // ── Create task ──
+        // Determine ProjectId: from parent task, or from request
+        int? projectId = request.ProjectId;
+        if (!projectId.HasValue && request.ParentTaskId.HasValue)
+        {
+            var parentForProject = await _db.Tasks.FindAsync(request.ParentTaskId.Value);
+            projectId = parentForProject?.ProjectId;
+        }
+
         var task = new TaskItem
         {
             Title = request.Title,
@@ -259,6 +322,7 @@ public class TasksController : ControllerBase
             EstimatedHours = request.EstimatedHours,
             RequiredSkills = request.RequiredSkills,
             ParentTaskId = request.ParentTaskId,
+            ProjectId = projectId,
             CreatedDate = DateTime.UtcNow,
             UpdatedDate = DateTime.UtcNow
         };

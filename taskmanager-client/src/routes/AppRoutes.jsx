@@ -256,6 +256,12 @@ return ( <Routes>
       </ProtectedRoute>
     } />
 
+    <Route path="/teamlead/tasks" element={
+      <ProtectedRoute allowedRoles={['TeamLead','Team Lead']}>
+        <TasksPage />
+      </ProtectedRoute>
+    } />
+
     {/* Employee */}
     <Route path="/employee/dashboard" element={
       <ProtectedRoute>

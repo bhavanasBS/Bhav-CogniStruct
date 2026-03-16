@@ -44,6 +44,7 @@ public class CreateTaskRequest
     public double EstimatedHours { get; set; }
     public string? RequiredSkills { get; set; }
     public int? ParentTaskId { get; set; }
+    public int? ProjectId { get; set; }
     public double? SlaHours { get; set; }
 }
 

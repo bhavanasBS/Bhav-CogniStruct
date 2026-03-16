@@ -170,15 +170,27 @@ public class WorkloadController : ControllerBase
     public async Task<IActionResult> Recommend(
         int teamId,
         [FromQuery] double hours = 8,
-        [FromQuery] string? requiredSkills = null)
+        [FromQuery] string? requiredSkills = null,
+        [FromQuery] int? projectId = null)
     {
-        // Get all active employees
-        var employees = await _db.Users
+        IQueryable<User> employeeQuery = _db.Users
             .Include(u => u.AssignedTasks).ThenInclude(t => t.WorkLogs)
             .Include(u => u.WorkLogs)
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"))
-            .ToListAsync();
+            .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.RoleName == "Employee"));
+
+        // If projectId is provided, restrict to project members only
+        if (projectId.HasValue)
+        {
+            var projectMemberUserIds = await _db.ProjectMembers
+                .Where(pm => pm.ProjectId == projectId.Value)
+                .Select(pm => pm.UserId)
+                .ToListAsync();
+
+            employeeQuery = employeeQuery.Where(u => projectMemberUserIds.Contains(u.UserId));
+        }
+
+        var employees = await employeeQuery.ToListAsync();
 
         // ── If requiredSkills is provided → skill-based suggestions ──
         if (!string.IsNullOrWhiteSpace(requiredSkills))

@@ -6,7 +6,7 @@ import {
     Star, MessageSquare, Zap, Award, TrendingUp
 } from 'lucide-react';
 import { taskApi } from '../../api/taskApi';
-
+import { projectApi } from '../../api/projectApi';
 import { workloadApi } from '../../api/workloadApi';
 import { feedbackApi } from '../../api/feedbackApi';
 import api from '../../api/axiosInstance';
@@ -57,23 +57,52 @@ const ProjectDetailPage = () => {
     const fetchProject = useCallback(async () => {
         try {
             setIsLoading(true);
-            const projRes = await taskApi.getById(id);
-            setProject(projRes.data);
+            // Fetch project from Projects API (enriched response with members + tasks)
+            const projRes = await projectApi.getById(id);
+            const p = projRes.data;
 
-            // Fetch subtasks separately — handle 403 gracefully
-            try {
-                const subtaskRes = await taskApi.getSubTasks(id);
-                setSubtasks(subtaskRes.data || []);
-            } catch (subtaskErr) {
-                console.warn('Could not load subtasks:', subtaskErr.response?.status);
-                setSubtasks([]);
-            }
+            // Map project data to a format compatible with the existing UI
+            setProject({
+                id: p.projectId,
+                title: p.name,
+                description: p.description,
+                status: p.status ?? 0,
+                priority: 1,
+                deadline: null,
+                createdDate: p.createdDate,
+                assigneeName: p.leadName,
+                assignerName: p.managerName,
+                teamName: p.teamName,
+                isProject: true,
+                subTaskCount: p.taskCount ?? 0,
+                completedSubTaskCount: p.completedTaskCount ?? 0,
+            });
 
-            // Load project members (eligible assignees)
-            try {
-                const membersRes = await api.get(`/api/tasks/${id}/eligible-assignees`);
-                setTeamMembers(membersRes.data || []);
-            } catch { /* ignore */ }
+            // Set tasks from embedded tasks list
+            const tasks = (p.tasks || []).map(t => ({
+                id: t.taskId,
+                title: t.title,
+                description: t.description,
+                assigneeId: t.assigneeId,
+                assigneeName: t.assigneeName,
+                priority: t.priority,
+                status: t.status,
+                deadline: t.deadline,
+                estimatedHours: t.estimatedHours,
+                createdDate: t.createdDate,
+                subTaskCount: t.subTaskCount ?? 0,
+                completedSubTaskCount: t.completedSubTaskCount ?? 0,
+            }));
+            setSubtasks(tasks);
+
+            // Set members from embedded members list (as eligible assignees)
+            const members = (p.members || []).map(m => ({
+                userId: m.userId,
+                name: m.name,
+                email: m.email,
+                role: m.role,
+            }));
+            setTeamMembers(members);
         } catch (err) {
             console.error('Failed to load project:', err);
             toast.error('Failed to load project');
@@ -102,7 +131,7 @@ const ProjectDetailPage = () => {
                 title: form.title,
                 description: form.description,
                 assigneeId: Number(form.assignedTo),
-                parentTaskId: Number(id),
+                projectId: Number(id),
                 priority: Number(form.priority),
                 deadline: form.deadline,
                 estimatedHours: Number(form.estimatedHours),
@@ -127,16 +156,17 @@ const ProjectDetailPage = () => {
             toast.error('Enter required skills first (e.g. React,SQL)');
             return;
         }
-        if (!project?.taskId) {
+        if (!project?.id) {
             toast.error('No project found');
             return;
         }
         try {
             setLoadingSuggestions(true);
             const res = await workloadApi.getSkillRecommendation(
-                project.taskId,
+                project.id,
                 form.requiredSkills,
-                Number(form.estimatedHours) || 8
+                Number(form.estimatedHours) || 8,
+                Number(id) // projectId — restrict to project members only
             );
             setSuggestions(res.data || []);
             setShowSuggestions(true);
@@ -366,6 +396,53 @@ const ProjectDetailPage = () => {
                     <p className="text-slate-700">{project.description}</p>
                 </div>
             )}
+
+            {/* Project Members */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="font-semibold text-slate-700 flex items-center gap-2">
+                        <Users2 className="w-4 h-4 text-indigo-500" />
+                        Project Members ({teamMembers.length})
+                    </h3>
+                </div>
+                {teamMembers.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <Users2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                        <h4 className="text-sm font-semibold text-slate-500">No members assigned</h4>
+                        <p className="text-xs text-slate-400 mt-1">Members will appear here once added to the project</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-slate-100">
+                        {teamMembers.map(member => (
+                            <div key={member.userId} className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                        {member.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-800">{member.name}</p>
+                                        <p className="text-xs text-slate-400">{member.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                        member.role === 'TeamLead' || member.role === 'Team Lead'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-blue-100 text-blue-700'
+                                    }`}>
+                                        {member.role}
+                                    </span>
+                                    {member.isLead && (
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                                            <Star className="w-3 h-3" /> Lead
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* Subtasks */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

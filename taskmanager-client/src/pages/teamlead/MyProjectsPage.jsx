@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FolderKanban, CheckCircle, Clock, AlertTriangle, BarChart3, PauseCircle } from 'lucide-react';
-import { taskApi } from '../../api/taskApi';
+import { projectApi } from '../../api/projectApi';
 import toast from 'react-hot-toast';
 
 const MyProjectsPage = () => {
@@ -13,11 +13,23 @@ const MyProjectsPage = () => {
         const fetchProjects = async () => {
             try {
                 setIsLoading(true);
-                const res = await taskApi.getAll();
-                const all = res.data.items || res.data || [];
-                // Filter only parent tasks (projects) assigned to current user
-                const parentTasks = all.filter(t => t.isProject && t.parentTaskId == null);
-                setProjects(parentTasks);
+                const res = await projectApi.getAll();
+                const all = res.data || [];
+                // Map project fields to the card UI format
+                const mapped = all.map(p => ({
+                    id: p.projectId,
+                    title: p.name,
+                    description: p.description,
+                    status: p.status ?? 0,
+                    priority: p.priority ?? 1,
+                    deadline: p.deadline,
+                    teamName: p.teamName,
+                    leadName: p.leadName,
+                    isProject: true,
+                    subTaskCount: p.taskCount ?? 0,
+                    completedSubTaskCount: p.completedTaskCount ?? 0,
+                }));
+                setProjects(mapped);
             } catch (err) {
                 console.error('Failed to load projects:', err);
                 toast.error('Failed to load projects');

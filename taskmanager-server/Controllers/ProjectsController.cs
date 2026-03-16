@@ -29,7 +29,10 @@ public class ProjectsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/projects — Return projects created by the current manager
+    /// GET /api/projects — Return projects based on current user's role:
+    ///   Admin: all projects
+    ///   Manager: projects created by the current manager
+    ///   TeamLead / Employee: projects where user is a ProjectMember
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -37,13 +40,30 @@ public class ProjectsController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == 0) return Unauthorized();
 
-        var projects = await _db.Projects
+        var query = _db.Projects
             .Include(p => p.CreatedByManager)
             .Include(p => p.Lead)
             .Include(p => p.Team)
             .Include(p => p.Members)
             .Include(p => p.Tasks)
-            .Where(p => p.CreatedByManagerId == userId)
+            .AsQueryable();
+
+        if (User.IsInRole("Admin"))
+        {
+            // Admin sees all projects
+        }
+        else if (User.IsInRole("Manager"))
+        {
+            // Manager sees projects they created
+            query = query.Where(p => p.CreatedByManagerId == userId);
+        }
+        else
+        {
+            // TeamLead / Employee sees projects where they are a member
+            query = query.Where(p => p.Members.Any(m => m.UserId == userId));
+        }
+
+        var projects = await query
             .OrderByDescending(p => p.CreatedDate)
             .ToListAsync();
 
@@ -52,7 +72,7 @@ public class ProjectsController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/projects/{id} — Return project details with members
+    /// GET /api/projects/{id} — Return project details with members and tasks
     /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
@@ -63,11 +83,55 @@ public class ProjectsController : ControllerBase
             .Include(p => p.Team)
             .Include(p => p.Members).ThenInclude(m => m.User)
                 .ThenInclude(u => u!.UserRoles).ThenInclude(ur => ur.Role)
-            .Include(p => p.Tasks)
+            .Include(p => p.Tasks).ThenInclude(t => t.Assignee)
+            .Include(p => p.Tasks).ThenInclude(t => t.SubTasks)
             .FirstOrDefaultAsync(p => p.ProjectId == id);
 
         if (project == null) return NotFound();
-        return Ok(MapToDto(project));
+
+        var dto = MapToDto(project);
+
+        // Return enriched detail with embedded members and tasks
+        return Ok(new
+        {
+            dto.ProjectId,
+            dto.Name,
+            dto.Description,
+            dto.CreatedByManagerId,
+            dto.ManagerName,
+            dto.LeadId,
+            dto.LeadName,
+            dto.TeamId,
+            dto.TeamName,
+            dto.Status,
+            dto.CreatedDate,
+            dto.MemberCount,
+            dto.TaskCount,
+            dto.CompletedTaskCount,
+            Members = project.Members.Select(m => new
+            {
+                UserId = m.UserId,
+                Name = $"{m.User.FirstName} {m.User.LastName}",
+                Email = m.User.Email,
+                Role = m.User.UserRoles.FirstOrDefault()?.Role.RoleName ?? "Employee",
+                IsLead = m.UserId == project.LeadId
+            }),
+            Tasks = project.Tasks.Where(t => t.ParentTaskId == null || t.ProjectId == id).Select(t => new
+            {
+                TaskId = t.TaskId,
+                Title = t.Title,
+                Description = t.Description,
+                AssigneeId = t.AssigneeId,
+                AssigneeName = t.Assignee != null ? $"{t.Assignee.FirstName} {t.Assignee.LastName}" : null,
+                Priority = t.Priority,
+                Status = t.Status,
+                Deadline = t.Deadline,
+                EstimatedHours = t.EstimatedHours,
+                CreatedDate = t.CreatedDate,
+                SubTaskCount = t.SubTasks?.Count ?? 0,
+                CompletedSubTaskCount = t.SubTasks?.Count(st => st.Status == 3) ?? 0
+            })
+        });
     }
 
     /// <summary>
@@ -278,10 +342,11 @@ public class ProjectsController : ControllerBase
         // Validate members belong to the project's team
         if (project.TeamId.HasValue)
         {
-            var teamMemberIds = await _db.TeamMembers
+            var teamMemberIdsList = await _db.TeamMembers
                 .Where(tm => tm.TeamId == project.TeamId.Value)
                 .Select(tm => tm.UserId)
-                .ToHashSetAsync();
+                .ToListAsync();
+            var teamMemberIds = teamMemberIdsList.ToHashSet();
 
             var invalid = req.UserIds.Where(id => !teamMemberIds.Contains(id)).ToList();
             if (invalid.Any())
