@@ -54,7 +54,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:5173",
                 "http://localhost:5174",
                 "http://localhost:3000",
-                "https://YOUR-APP-NAME.vercel.app") // Replace with your Vercel URL after deployment
+                "https://bhav-cogni-struct.vercel.app",
+                "https://bhav-cogni-struct-2qhftwkm-bhavanasbs-projects.vercel.app") // Vercel preview URL
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
