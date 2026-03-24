@@ -1,0 +1,301 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.4">
+  <diagram name="DFD Level 1 - CogniStruct" id="dfd_l1">
+    <mxGraphModel dx="1572" dy="1302" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;fontSize=22;fontStyle=1;fillColor=none;strokeColor=none;align=center;verticalAlign=middle;fontColor=#333333;" value="DFD Level 1 — CogniStruct Task Management System" vertex="1">
+          <mxGeometry height="40" width="700" x="750" y="-30" as="geometry" />
+        </mxCell>
+        <mxCell id="ee_admin" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=0;fontSize=14;verticalAlign=middle;shadow=1;" value="&lt;b&gt;Admin&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="170" x="60" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ee_manager" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=0;fontSize=14;verticalAlign=middle;shadow=1;" value="&lt;b&gt;Manager&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="170" x="2430" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ee_tl" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=0;fontSize=14;verticalAlign=middle;shadow=1;" value="&lt;b&gt;Team Lead&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="170" x="60" y="1520" as="geometry" />
+        </mxCell>
+        <mxCell id="ee_emp" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=0;fontSize=14;verticalAlign=middle;shadow=1;" value="&lt;b&gt;Employee&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="170" x="2430" y="1520" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;1.0&lt;/b&gt;&lt;br&gt;User Authentication&lt;br&gt;&amp;amp; Authorization" vertex="1">
+          <mxGeometry height="120" width="250" x="1100" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;2.0&lt;/b&gt;&lt;br&gt;User &amp;amp; Role&lt;br&gt;Management" vertex="1">
+          <mxGeometry height="120" width="250" x="400" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;3.0&lt;/b&gt;&lt;br&gt;Project&lt;br&gt;Management" vertex="1">
+          <mxGeometry height="120" width="250" x="400" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=12;verticalAlign=middle;shadow=1;" value="&lt;b&gt;4.0&lt;/b&gt;&lt;br&gt;Task&lt;br&gt;Management" vertex="1">
+          <mxGeometry height="140" width="280" x="1030" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;5.0&lt;/b&gt;&lt;br&gt;Team&lt;br&gt;Management" vertex="1">
+          <mxGeometry height="120" width="250" x="1750" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;6.0&lt;/b&gt;&lt;br&gt;Work Tracking&lt;br&gt;&amp;amp; Logging" vertex="1">
+          <mxGeometry height="120" width="250" x="1750" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="p7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;7.0&lt;/b&gt;&lt;br&gt;Notifications &amp;amp;&lt;br&gt;Communication" vertex="1">
+          <mxGeometry height="120" width="250" x="700" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="p8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=middle;shadow=1;" value="&lt;b&gt;8.0&lt;/b&gt;&lt;br&gt;Analytics &amp;amp;&lt;br&gt;Reporting" vertex="1">
+          <mxGeometry height="120" width="250" x="1400" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D1 | Users &amp;amp; Settings" vertex="1">
+          <mxGeometry height="40" width="240" x="40" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D2 | Roles &amp;amp; UserRoles" vertex="1">
+          <mxGeometry height="40" width="240" x="40" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D3 | Projects &amp;amp; Members" vertex="1">
+          <mxGeometry height="40" width="240" x="40" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D4 | Tasks" vertex="1">
+          <mxGeometry height="40" width="240" x="1080" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="d5" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D5 | Teams &amp;amp; Members" vertex="1">
+          <mxGeometry height="40" width="240" x="2350" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="d6" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D6 | Work Logs" vertex="1">
+          <mxGeometry height="40" width="240" x="2350" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d7" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D7 | Notifications" vertex="1">
+          <mxGeometry height="40" width="240" x="800" y="940" as="geometry" />
+        </mxCell>
+        <mxCell id="d8" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D8 | Task Collaboration" vertex="1">
+          <mxGeometry height="40" width="240" x="1450" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="d9" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D9 | Reviews &amp;amp; Skills" vertex="1">
+          <mxGeometry height="40" width="240" x="1550" y="940" as="geometry" />
+        </mxCell>
+        <mxCell id="d10" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;fontStyle=1;align=left;spacingLeft=8;overflow=hidden;shadow=1;" value="D10 | Audit Logs &amp;amp; Pause Req." vertex="1">
+          <mxGeometry height="40" width="260" x="40" y="1220" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="ee_admin" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="Login Credentials">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="Login Credentials">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" source="ee_tl" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="Login Credentials">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" source="ee_emp" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="Login Credentials">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" source="d1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="User Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" source="p1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d1" value="Refresh Token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f7" edge="1" parent="1" source="d2" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p1" value="Role Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" edge="1" parent="1" source="p1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_admin" value="JWT Token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f9" edge="1" parent="1" source="p1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="JWT Token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f10" edge="1" parent="1" source="p1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="JWT Token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f11" edge="1" parent="1" source="p1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_emp" value="JWT Token">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f12" edge="1" parent="1" source="ee_admin" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p2" value="User Registration Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f13" edge="1" parent="1" source="ee_emp" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p2" value="Profile Update Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f14" edge="1" parent="1" source="p2" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d1" value="User Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f15" edge="1" parent="1" source="d1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p2" value="User List">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f16" edge="1" parent="1" source="p2" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d2" value="Role Assignment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f17" edge="1" parent="1" source="p2" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_admin" value="User List &amp; Confirmation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f18" edge="1" parent="1" source="p2" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_emp" value="Profile Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f19" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p3" value="Project Details">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f20" edge="1" parent="1" source="p3" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d3" value="Project Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f21" edge="1" parent="1" source="d3" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p3" value="Project Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f22" edge="1" parent="1" source="p3" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d7" value="Notification Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f23" edge="1" parent="1" source="p3" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Project List">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f24" edge="1" parent="1" source="p3" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="Assigned Project Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f25" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p4" value="Task Creation Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f26" edge="1" parent="1" source="ee_tl" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p4" value="Task Assignment Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f27" edge="1" parent="1" source="ee_emp" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p4" value="Task Status Update">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f28" edge="1" parent="1" source="ee_tl" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p4" value="Task Feedback Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f29" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d4" value="Task Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f30" edge="1" parent="1" source="d4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p4" value="Task Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f31" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d8" value="Comment / Attachment / Feedback">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f32" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d10" value="Audit Log Entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f33" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d7" value="Notification Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f34" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_emp" value="Assigned Task Details">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f35" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="Task Status Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f36" edge="1" parent="1" source="p4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Task Overview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f37" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p5" value="Team Details">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f38" edge="1" parent="1" source="p5" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d5" value="Team Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f39" edge="1" parent="1" source="d5" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p5" value="Team Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f40" edge="1" parent="1" source="d1" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p5" value="Available Users">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f41" edge="1" parent="1" source="p5" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Team List">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f42" edge="1" parent="1" source="p5" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="Team Members">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f43" edge="1" parent="1" source="ee_emp" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p6" value="Work Log Entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f44" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p6" value="Employee Review Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f45" edge="1" parent="1" source="p6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d6" value="Work Log Record">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f46" edge="1" parent="1" source="d6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p6" value="Work Log History">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f47" edge="1" parent="1" source="p6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="d9" value="Employee Review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f48" edge="1" parent="1" source="p6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_emp" value="Work Summary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f49" edge="1" parent="1" source="p6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Work Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f50" edge="1" parent="1" source="d7" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p7" value="Notification Records">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f51" edge="1" parent="1" source="p7" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Notification Alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f52" edge="1" parent="1" source="p7" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="Notification Alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f53" edge="1" parent="1" source="p7" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_emp" value="Notification Alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f54" edge="1" parent="1" source="p7" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_admin" value="Notification Alert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f55" edge="1" parent="1" source="ee_admin" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Analytics Request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f56" edge="1" parent="1" source="ee_manager" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Analytics Request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f57" edge="1" parent="1" source="d4" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Task Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f58" edge="1" parent="1" source="d6" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Work Log Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f59" edge="1" parent="1" source="d9" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Review &amp; Skill Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f60" edge="1" parent="1" source="d10" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="p8" value="Audit Data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f61" edge="1" parent="1" source="p8" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_admin" value="System Analytics Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f62" edge="1" parent="1" source="p8" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_manager" value="Team Analytics Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f63" edge="1" parent="1" source="p8" style="curved=1;html=1;strokeColor=#808080;fontSize=9;fontColor=#333;labelBackgroundColor=#FFF;endArrow=classic;" target="ee_tl" value="Task Analytics Report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#CCCCCC;dashed=1;opacity=80;" value="" vertex="1">
+          <mxGeometry height="220" width="380" x="2200" y="1300" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" parent="1" style="text;html=1;fontSize=12;fontStyle=0;fillColor=none;strokeColor=none;align=center;" value="&lt;b&gt;Legend (Yourdon-DeMarco)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="25" width="280" x="2250" y="1310" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_ee" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;fontStyle=1;" value="External Entity" vertex="1">
+          <mxGeometry height="30" width="120" x="2220" y="1345" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_ee_lbl" parent="1" style="text;html=1;fontSize=10;fillColor=none;strokeColor=none;align=left;" value="= Actor / User Role" vertex="1">
+          <mxGeometry height="30" width="200" x="2355" y="1345" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_proc" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=10;fontStyle=1;" value="Process" vertex="1">
+          <mxGeometry height="40" width="120" x="2220" y="1385" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_proc_lbl" parent="1" style="text;html=1;fontSize=10;fillColor=none;strokeColor=none;align=left;" value="= Data Transformation" vertex="1">
+          <mxGeometry height="30" width="200" x="2355" y="1390" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_ds" parent="1" style="shape=partialRectangle;whiteSpace=wrap;html=1;top=1;bottom=1;left=1;right=0;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;fontStyle=1;align=left;spacingLeft=5;" value="D# | Data Store" vertex="1">
+          <mxGeometry height="30" width="120" x="2220" y="1440" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_ds_lbl" parent="1" style="text;html=1;fontSize=10;fillColor=none;strokeColor=none;align=left;" value="= Stored Data (DB Table)" vertex="1">
+          <mxGeometry height="30" width="200" x="2355" y="1440" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_arrow" edge="1" parent="1" style="endArrow=classic;html=1;strokeColor=#808080;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="2220" y="1495" as="sourcePoint" />
+            <mxPoint x="2340" y="1495" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg_arrow_lbl" parent="1" style="text;html=1;fontSize=10;fillColor=none;strokeColor=none;align=left;" value="= Data Flow (labelled)" vertex="1">
+          <mxGeometry height="30" width="200" x="2355" y="1480" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
